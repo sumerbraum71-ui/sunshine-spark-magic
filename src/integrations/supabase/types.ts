@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          min_order_amount: number | null
+          used_count: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_amount?: number | null
+          used_count?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_amount?: number | null
+          used_count?: number | null
+        }
+        Relationships: []
+      }
       order_messages: {
         Row: {
           created_at: string
@@ -52,7 +91,9 @@ export type Database = {
       orders: {
         Row: {
           amount: number
+          coupon_code: string | null
           created_at: string
+          discount_amount: number | null
           email: string | null
           id: string
           option_id: string | null
@@ -66,7 +107,9 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          coupon_code?: string | null
           created_at?: string
+          discount_amount?: number | null
           email?: string | null
           id?: string
           option_id?: string | null
@@ -80,7 +123,9 @@ export type Database = {
         }
         Update: {
           amount?: number
+          coupon_code?: string | null
           created_at?: string
+          discount_amount?: number | null
           email?: string | null
           id?: string
           option_id?: string | null

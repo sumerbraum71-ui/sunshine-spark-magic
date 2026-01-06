@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const AdminAuth = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -14,6 +14,9 @@ const AdminAuth = () => {
   const isHandlingAuth = useRef(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Convert username to a fake email for Supabase Auth
+  const usernameToEmail = (user: string) => `${user.toLowerCase().trim()}@admin.local`;
 
   useEffect(() => {
     // Check existing session on mount
@@ -68,65 +71,73 @@ const AdminAuth = () => {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isHandlingAuth.current) return;
+    
+    if (!username.trim()) {
+      toast({
+        title: 'خطأ',
+        description: 'يرجى إدخال اسم المستخدم',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: 'خطأ',
+        description: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     isHandlingAuth.current = true;
     setIsLoading(true);
+
+    const fakeEmail = usernameToEmail(username);
 
     try {
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: fakeEmail,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/admin-auth`
+            data: {
+              username: username.trim(),
+            }
           }
         });
 
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('already registered')) {
+            throw new Error('اسم المستخدم مستخدم بالفعل');
+          }
+          throw error;
+        }
 
         if (data.user) {
           toast({
             title: 'تم إنشاء الحساب',
             description: 'تم إنشاء حسابك بنجاح. يرجى الانتظار حتى يتم منحك الصلاحيات من قبل الأدمن.',
           });
-          // Sign out the user since they don't have admin access yet
           await supabase.auth.signOut();
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: fakeEmail,
           password,
         });
 
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
+          }
+          throw error;
+        }
 
         if (data.user) {
-          // Check if user is admin OR has any permissions
-          const { data: isAdmin } = await supabase.rpc('has_role', {
-            _user_id: data.user.id,
-            _role: 'admin',
-          });
+          const hasAccess = await checkUserAccess(data.user.id);
 
-          // If not admin, check for any permissions
-          let hasAnyPermission = false;
-          if (!isAdmin) {
-            const { data: permissions } = await supabase
-              .from('user_permissions')
-              .select('*')
-              .eq('user_id', data.user.id)
-              .maybeSingle();
-
-            if (permissions) {
-              hasAnyPermission = 
-                permissions.can_manage_orders ||
-                permissions.can_manage_products ||
-                permissions.can_manage_tokens ||
-                permissions.can_manage_refunds ||
-                permissions.can_manage_users ||
-                permissions.can_manage_coupons;
-            }
-          }
-
-          if (!isAdmin && !hasAnyPermission) {
+          if (!hasAccess) {
             await supabase.auth.signOut();
             toast({
               title: 'غير مصرح',
@@ -179,15 +190,15 @@ const AdminAuth = () => {
 
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
+              <label className="block text-sm font-medium mb-2">اسم المستخدم</label>
               <div className="relative">
-                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <User className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="input-field w-full pr-10"
-                  placeholder="admin@example.com"
+                  placeholder="admin"
                   required
                 />
               </div>

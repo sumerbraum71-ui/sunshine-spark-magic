@@ -349,11 +349,21 @@ const Refund = () => {
                       </div>
                     )}
 
-                    {/* Admin Note (for rejected) */}
-                    {refundStatus.status === 'rejected' && refundStatus.admin_note && (
-                      <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                        <p className="text-xs text-destructive mb-1">سبب الرفض:</p>
-                        <p className="text-sm text-destructive">{refundStatus.admin_note}</p>
+                    {/* Admin Note */}
+                    {refundStatus.admin_note && (
+                      <div className={`p-3 rounded-lg border ${
+                        refundStatus.status === 'rejected' 
+                          ? 'bg-destructive/10 border-destructive/20' 
+                          : 'bg-primary/10 border-primary/20'
+                      }`}>
+                        <p className={`text-xs mb-1 ${
+                          refundStatus.status === 'rejected' ? 'text-destructive' : 'text-primary'
+                        }`}>
+                          {refundStatus.status === 'rejected' ? 'سبب الرفض:' : 'ملاحظة:'}
+                        </p>
+                        <p className={`text-sm ${
+                          refundStatus.status === 'rejected' ? 'text-destructive' : 'text-foreground'
+                        }`}>{refundStatus.admin_note}</p>
                       </div>
                     )}
 

@@ -37,6 +37,7 @@ interface ProductOption {
 
 interface Order {
   id: string;
+  order_number: number;
   product_id: string | null;
   option_id: string | null;
   amount: number;
@@ -47,6 +48,7 @@ interface Order {
 
 interface ActiveOrder {
   id: string;
+  order_number: number;
   status: string;
   response_message: string | null;
   product_id: string | null;
@@ -96,7 +98,7 @@ const Index = () => {
         // Fetch order status from database
         const { data: orderData } = await supabase
           .from('orders')
-          .select('id, status, response_message, product_id, option_id, amount')
+          .select('id, order_number, status, response_message, product_id, option_id, amount')
           .eq('id', orderId)
           .single();
         
@@ -333,7 +335,7 @@ const Index = () => {
       verification_link: selectedOption.type === 'link' ? verificationLink : (selectedOption.type === 'text' ? textInput : null),
       amount: selectedOption.price,
       status: 'pending'
-    }).select('id').single();
+    }).select('id, order_number').single();
 
     if (orderError || !orderData) {
       toast({
@@ -361,6 +363,7 @@ const Index = () => {
     // Set active order - stay on same page, show order status in second card
     setActiveOrder({
       id: orderData.id,
+      order_number: orderData.order_number,
       status: 'pending',
       response_message: null,
       product_id: product.id,
@@ -954,6 +957,12 @@ const Index = () => {
                 {/* Order Details */}
                 <div className="bg-muted/50 rounded-xl p-3 space-y-2 text-sm">
                   <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">رقم الطلب:</span>
+                    <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
+                      #{activeOrder.order_number}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">المنتج:</span>
                     <span className="font-medium text-xs">
                       {activeOrderProduct && activeOrderOption ? `${activeOrderProduct.name} - ${activeOrderOption.name}` : 'غير معروف'}
@@ -1056,6 +1065,11 @@ const Index = () => {
                                 <div key={order.id} className="bg-muted/30 rounded-lg p-3 border border-border">
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="font-mono text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                                          #{order.order_number}
+                                        </span>
+                                      </div>
                                       <p className="font-medium text-sm truncate">
                                         {getProductName(order.product_id, order.option_id)}
                                       </p>

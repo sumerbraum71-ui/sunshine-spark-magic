@@ -161,17 +161,29 @@ const OrderCard = ({
             </div>
           )}
 
-          {order.verification_link && (
+        </div>
+
+        {/* Verification Link - Full Display */}
+        {order.verification_link && (
+          <div className="flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-lg">
+            <span className="text-sm text-muted-foreground shrink-0">رابط التحقق:</span>
             <a
               href={order.verification_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-primary hover:underline flex items-center gap-1"
+              className="text-sm text-primary hover:underline break-all flex-1"
+              dir="ltr"
             >
-              رابط التحقق ↗
+              {order.verification_link}
             </a>
-          )}
-        </div>
+            <button 
+              onClick={() => copyToClipboard(order.verification_link!, 'رابط التحقق')} 
+              className="p-1.5 hover:bg-background rounded shrink-0"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3">

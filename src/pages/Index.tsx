@@ -796,30 +796,6 @@ const Index = () => {
               >
                 {isLoading ? 'جاري التحقق...' : 'متابعة'}
               </button>
-
-              {/* Balance Check Section */}
-              <div className="border-t border-border pt-4 mt-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Search className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">أو تحقق من رصيدك</span>
-                </div>
-                <button
-                  onClick={handleShowBalance}
-                  disabled={!token.trim() || isLoading}
-                  className="w-full py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
-                >
-                  {isLoading ? 'جاري التحقق...' : 'عرض الرصيد'}
-                </button>
-
-                {showBalance && tokenBalance !== null && (
-                  <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 mt-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">الرصيد الحالي:</span>
-                      <span className="text-lg font-bold text-primary">${tokenBalance}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           )}
 

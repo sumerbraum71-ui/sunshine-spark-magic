@@ -984,7 +984,7 @@ const Index = () => {
                   {tokenBalance !== null && (
                     <div className="flex items-center justify-between pt-2 border-t border-border">
                       <span className="text-muted-foreground">الرصيد المتبقي:</span>
-                      <span className="font-bold">${tokenBalance}</span>
+                      <span className="font-bold">${tokenBalance - activeOrder.amount}</span>
                     </div>
                   )}
                 </div>

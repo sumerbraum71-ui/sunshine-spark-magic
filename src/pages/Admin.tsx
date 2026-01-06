@@ -264,6 +264,158 @@ const OrderCard = ({
   );
 };
 
+// Refund Card Component
+const RefundCard = ({
+  refund,
+  orderInfo,
+  onApprove,
+  onReject
+}: {
+  refund: RefundRequest;
+  orderInfo: Order | undefined;
+  onApprove: (refund: RefundRequest) => void;
+  onReject: (refundId: string, adminNote: string) => void;
+}) => {
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectNote, setRejectNote] = useState('');
+
+  const handleReject = () => {
+    onReject(refund.id, rejectNote);
+    setShowRejectForm(false);
+    setRejectNote('');
+  };
+
+  return (
+    <div className={`bg-card rounded-xl border overflow-hidden ${
+      refund.status === 'pending' ? 'border-warning' : 
+      refund.status === 'approved' ? 'border-success' : 'border-destructive'
+    }`}>
+      {/* Status Header */}
+      <div className={`px-4 py-2 flex items-center justify-between ${
+        refund.status === 'pending' ? 'bg-warning/10' :
+        refund.status === 'approved' ? 'bg-success/10' : 'bg-destructive/10'
+      }`}>
+        <div className="flex items-center gap-2">
+          {refund.status === 'pending' ? (
+            <Clock className="w-4 h-4 text-warning" />
+          ) : refund.status === 'approved' ? (
+            <CheckCircle2 className="w-4 h-4 text-success" />
+          ) : (
+            <XCircle className="w-4 h-4 text-destructive" />
+          )}
+          <span className={`text-sm font-semibold ${
+            refund.status === 'pending' ? 'text-warning' :
+            refund.status === 'approved' ? 'text-success' : 'text-destructive'
+          }`}>
+            {refund.status === 'pending' ? 'قيد المراجعة' :
+             refund.status === 'approved' ? 'تم الاسترداد' : 'مرفوض'}
+          </span>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {new Date(refund.created_at).toLocaleDateString('ar-EG')} - {new Date(refund.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {/* Token & Order Info */}
+        <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <Key className="w-4 h-4 text-muted-foreground" />
+            <span className="text-muted-foreground">التوكن:</span>
+            <span className="font-mono bg-muted px-2 py-0.5 rounded">{refund.token_value}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+            <span className="text-muted-foreground">رقم الطلب:</span>
+            <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
+              #{orderInfo?.order_number || '---'}
+            </span>
+          </div>
+          {orderInfo && (
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-primary" />
+              <span className="text-muted-foreground">المبلغ:</span>
+              <span className="font-bold text-primary">${orderInfo.amount}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Reason */}
+        {refund.reason && (
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <p className="text-xs text-muted-foreground mb-1">سبب الاسترداد:</p>
+            <p className="text-sm">{refund.reason}</p>
+          </div>
+        )}
+
+        {/* Admin Note for rejected */}
+        {refund.status === 'rejected' && refund.admin_note && (
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-xs text-destructive mb-1">سبب الرفض:</p>
+            <p className="text-sm text-destructive">{refund.admin_note}</p>
+          </div>
+        )}
+
+        {/* Actions */}
+        {refund.status === 'pending' && !showRejectForm && (
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={() => onApprove(refund)}
+              className="flex-1 py-2 bg-success text-success-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              قبول الاسترداد
+            </button>
+            <button
+              onClick={() => setShowRejectForm(true)}
+              className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            >
+              <XCircle className="w-4 h-4" />
+              رفض
+            </button>
+          </div>
+        )}
+
+        {/* Reject Form */}
+        {refund.status === 'pending' && showRejectForm && (
+          <div className="pt-2 space-y-3 border-t border-border">
+            <div>
+              <label className="text-sm font-medium mb-2 block">سبب الرفض (اختياري)</label>
+              <textarea
+                value={rejectNote}
+                onChange={(e) => setRejectNote(e.target.value)}
+                className="input-field w-full h-20"
+                placeholder="اكتب سبب رفض طلب الاسترداد..."
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleReject}
+                className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <XCircle className="w-4 h-4" />
+                تأكيد الرفض
+              </button>
+              <button
+                onClick={() => { setShowRejectForm(false); setRejectNote(''); }}
+                className="px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        )}
+
+        {refund.processed_at && (
+          <p className="text-xs text-muted-foreground">
+            تم المعالجة: {new Date(refund.processed_at).toLocaleDateString('ar-EG')}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Product Card Component
 const ProductCard = ({
   product,
@@ -955,12 +1107,13 @@ const Admin = () => {
     fetchData();
   };
 
-  const handleRejectRefund = async (refundId: string) => {
+  const handleRejectRefund = async (refundId: string, adminNote: string) => {
     const { error } = await supabase
       .from('refund_requests')
       .update({ 
         status: 'rejected', 
-        processed_at: new Date().toISOString() 
+        processed_at: new Date().toISOString(),
+        admin_note: adminNote || null
       })
       .eq('id', refundId);
 
@@ -1313,95 +1466,13 @@ const Admin = () => {
                   const orderInfo = getOrderInfo();
                   
                   return (
-                    <div key={refund.id} className={`bg-card rounded-xl border overflow-hidden ${
-                      refund.status === 'pending' ? 'border-warning' : 
-                      refund.status === 'approved' ? 'border-success' : 'border-destructive'
-                    }`}>
-                      {/* Status Header */}
-                      <div className={`px-4 py-2 flex items-center justify-between ${
-                        refund.status === 'pending' ? 'bg-warning/10' :
-                        refund.status === 'approved' ? 'bg-success/10' : 'bg-destructive/10'
-                      }`}>
-                        <div className="flex items-center gap-2">
-                          {refund.status === 'pending' ? (
-                            <Clock className="w-4 h-4 text-warning" />
-                          ) : refund.status === 'approved' ? (
-                            <CheckCircle2 className="w-4 h-4 text-success" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-destructive" />
-                          )}
-                          <span className={`text-sm font-semibold ${
-                            refund.status === 'pending' ? 'text-warning' :
-                            refund.status === 'approved' ? 'text-success' : 'text-destructive'
-                          }`}>
-                            {refund.status === 'pending' ? 'قيد المراجعة' :
-                             refund.status === 'approved' ? 'تم الاسترداد' : 'مرفوض'}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(refund.created_at).toLocaleDateString('ar-EG')} - {new Date(refund.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-
-                      <div className="p-4 space-y-3">
-                        {/* Token & Order Info */}
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Key className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">التوكن:</span>
-                            <span className="font-mono bg-muted px-2 py-0.5 rounded">{refund.token_value}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <ShoppingBag className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">رقم الطلب:</span>
-                            <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
-                              #{orderInfo?.order_number || '---'}
-                            </span>
-                          </div>
-                          {orderInfo && (
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="w-4 h-4 text-primary" />
-                              <span className="text-muted-foreground">المبلغ:</span>
-                              <span className="font-bold text-primary">${orderInfo.amount}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Reason */}
-                        {refund.reason && (
-                          <div className="p-3 bg-muted/50 rounded-lg">
-                            <p className="text-xs text-muted-foreground mb-1">سبب الاسترداد:</p>
-                            <p className="text-sm">{refund.reason}</p>
-                          </div>
-                        )}
-
-                        {/* Actions */}
-                        {refund.status === 'pending' && (
-                          <div className="flex gap-2 pt-2">
-                            <button
-                              onClick={() => handleApproveRefund(refund)}
-                              className="flex-1 py-2 bg-success text-success-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                            >
-                              <CheckCircle2 className="w-4 h-4" />
-                              قبول الاسترداد
-                            </button>
-                            <button
-                              onClick={() => handleRejectRefund(refund.id)}
-                              className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                            >
-                              <XCircle className="w-4 h-4" />
-                              رفض
-                            </button>
-                          </div>
-                        )}
-
-                        {refund.processed_at && (
-                          <p className="text-xs text-muted-foreground">
-                            تم المعالجة: {new Date(refund.processed_at).toLocaleDateString('ar-EG')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                    <RefundCard 
+                      key={refund.id}
+                      refund={refund}
+                      orderInfo={orderInfo}
+                      onApprove={handleApproveRefund}
+                      onReject={handleRejectRefund}
+                    />
                   );
                 })}
               </div>

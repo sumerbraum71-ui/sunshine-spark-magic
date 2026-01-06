@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Newspaper, HelpCircle, Users, Coins, Settings, Menu, X } from 'lucide-react';
+import { RotateCcw, HelpCircle, Users, Coins, Settings, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Header = () => {
@@ -30,10 +30,10 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2 flex-wrap justify-end">
-            <button className="nav-btn bg-secondary text-secondary-foreground hover:bg-muted flex items-center gap-2">
-              <Newspaper className="w-4 h-4" />
-              الأخبار
-            </button>
+            <Link to="/refund" className="nav-btn bg-secondary text-secondary-foreground hover:bg-muted flex items-center gap-2">
+              <RotateCcw className="w-4 h-4" />
+              طلب استرداد
+            </Link>
             <Link to="/faq" className="nav-btn bg-secondary text-secondary-foreground hover:bg-muted flex items-center gap-2">
               <HelpCircle className="w-4 h-4" />
               الأسئلة
@@ -56,10 +56,14 @@ const Header = () => {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden mt-3 pt-3 border-t border-border space-y-2">
-            <button className="w-full nav-btn bg-secondary text-secondary-foreground hover:bg-muted flex items-center gap-2 justify-center py-3">
-              <Newspaper className="w-4 h-4" />
-              الأخبار
-            </button>
+            <Link 
+              to="/refund" 
+              onClick={() => setIsMenuOpen(false)}
+              className="w-full nav-btn bg-secondary text-secondary-foreground hover:bg-muted flex items-center gap-2 justify-center py-3"
+            >
+              <RotateCcw className="w-4 h-4" />
+              طلب استرداد
+            </Link>
             <Link 
               to="/faq" 
               onClick={() => setIsMenuOpen(false)}

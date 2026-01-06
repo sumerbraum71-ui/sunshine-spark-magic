@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Package, Key, ShoppingBag, LogOut, Plus, Trash2, Edit2, Save, X,
   ChevronDown, ChevronUp, Settings, Copy, Eye, EyeOff, Clock, CheckCircle2,
-  XCircle, Loader2, LayoutGrid, Zap, Database, Bell, BellOff, TrendingUp, DollarSign, Users, MessageCircle, Link
+  XCircle, Loader2, LayoutGrid, Zap, Database, Bell, BellOff, TrendingUp, DollarSign, Users, MessageCircle, Link, RotateCcw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useOrderNotification } from '@/hooks/useOrderNotification';
@@ -60,6 +60,17 @@ interface Order {
   password: string | null;
   verification_link: string | null;
   response_message: string | null;
+}
+
+interface RefundRequest {
+  id: string;
+  token_value: string;
+  order_id: string;
+  reason: string | null;
+  status: string;
+  created_at: string;
+  processed_at: string | null;
+  admin_note: string | null;
 }
 
 // Status options
@@ -419,11 +430,12 @@ const ProductCard = ({
 };
 
 const Admin = () => {
-  const [activeTab, setActiveTab] = useState<'products' | 'tokens' | 'orders'>('orders');
+  const [activeTab, setActiveTab] = useState<'products' | 'tokens' | 'orders' | 'refunds'>('orders');
   const [products, setProducts] = useState<Product[]>([]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
   const [tokens, setTokens] = useState<Token[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -558,6 +570,9 @@ const Admin = () => {
     } else if (activeTab === 'orders') {
       const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
       setOrders(data || []);
+    } else if (activeTab === 'refunds') {
+      const { data } = await supabase.from('refund_requests').select('*').order('created_at', { ascending: false });
+      setRefundRequests((data || []) as RefundRequest[]);
     }
   };
 
@@ -878,6 +893,79 @@ const Admin = () => {
     }
   };
 
+  // Refund handlers
+  const handleApproveRefund = async (refund: RefundRequest) => {
+    // Get the order amount
+    const { data: orderData } = await supabase
+      .from('orders')
+      .select('amount, token_id')
+      .eq('id', refund.order_id)
+      .maybeSingle();
+
+    if (!orderData) {
+      toast({ title: 'خطأ', description: 'لم يتم العثور على الطلب', variant: 'destructive' });
+      return;
+    }
+
+    // Get the token
+    const { data: tokenData } = await supabase
+      .from('tokens')
+      .select('id, balance')
+      .eq('token', refund.token_value)
+      .maybeSingle();
+
+    if (!tokenData) {
+      toast({ title: 'خطأ', description: 'لم يتم العثور على التوكن', variant: 'destructive' });
+      return;
+    }
+
+    // Refund the amount to the token
+    const newBalance = Number(tokenData.balance) + Number(orderData.amount);
+    const { error: balanceError } = await supabase
+      .from('tokens')
+      .update({ balance: newBalance })
+      .eq('id', tokenData.id);
+
+    if (balanceError) {
+      toast({ title: 'خطأ', description: balanceError.message, variant: 'destructive' });
+      return;
+    }
+
+    // Update refund request status
+    const { error: refundError } = await supabase
+      .from('refund_requests')
+      .update({ 
+        status: 'approved', 
+        processed_at: new Date().toISOString() 
+      })
+      .eq('id', refund.id);
+
+    if (refundError) {
+      toast({ title: 'خطأ', description: refundError.message, variant: 'destructive' });
+      return;
+    }
+
+    toast({ title: 'تم', description: `تم استرداد $${orderData.amount} للتوكن` });
+    fetchData();
+  };
+
+  const handleRejectRefund = async (refundId: string) => {
+    const { error } = await supabase
+      .from('refund_requests')
+      .update({ 
+        status: 'rejected', 
+        processed_at: new Date().toISOString() 
+      })
+      .eq('id', refundId);
+
+    if (error) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'تم', description: 'تم رفض طلب الاسترداد' });
+      fetchData();
+    }
+  };
+
   // Stock handlers
   const openStockModal = (productId: string, optionId?: string) => {
     setCurrentStockProductId(productId);
@@ -978,12 +1066,13 @@ const Admin = () => {
             { id: 'orders', label: 'الطلبات', icon: ShoppingBag, count: orders.length },
             { id: 'products', label: 'الأقسام', icon: Package, count: products.length },
             { id: 'tokens', label: 'التوكنات', icon: Key, count: tokens.length },
+            { id: 'refunds', label: 'الاستردادات', icon: RotateCcw, count: refundRequests.filter(r => r.status === 'pending').length },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'products' | 'tokens' | 'orders')}
+                onClick={() => setActiveTab(tab.id as 'products' | 'tokens' | 'orders' | 'refunds')}
                 className={`flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
@@ -1190,6 +1279,123 @@ const Admin = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Refunds Tab */}
+        {activeTab === 'refunds' && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-primary" />
+              طلبات الاسترداد
+            </h2>
+
+            {refundRequests.length === 0 ? (
+              <div className="text-center py-12 bg-card rounded-xl border border-border">
+                <RotateCcw className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-muted-foreground">لا توجد طلبات استرداد</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {refundRequests.map(refund => {
+                  const getOrderInfo = () => {
+                    const order = orders.find(o => o.id === refund.order_id);
+                    return order;
+                  };
+                  const orderInfo = getOrderInfo();
+                  
+                  return (
+                    <div key={refund.id} className={`bg-card rounded-xl border overflow-hidden ${
+                      refund.status === 'pending' ? 'border-warning' : 
+                      refund.status === 'approved' ? 'border-success' : 'border-destructive'
+                    }`}>
+                      {/* Status Header */}
+                      <div className={`px-4 py-2 flex items-center justify-between ${
+                        refund.status === 'pending' ? 'bg-warning/10' :
+                        refund.status === 'approved' ? 'bg-success/10' : 'bg-destructive/10'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          {refund.status === 'pending' ? (
+                            <Clock className="w-4 h-4 text-warning" />
+                          ) : refund.status === 'approved' ? (
+                            <CheckCircle2 className="w-4 h-4 text-success" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-destructive" />
+                          )}
+                          <span className={`text-sm font-semibold ${
+                            refund.status === 'pending' ? 'text-warning' :
+                            refund.status === 'approved' ? 'text-success' : 'text-destructive'
+                          }`}>
+                            {refund.status === 'pending' ? 'قيد المراجعة' :
+                             refund.status === 'approved' ? 'تم الاسترداد' : 'مرفوض'}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(refund.created_at).toLocaleDateString('ar-EG')} - {new Date(refund.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+
+                      <div className="p-4 space-y-3">
+                        {/* Token & Order Info */}
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Key className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">التوكن:</span>
+                            <span className="font-mono bg-muted px-2 py-0.5 rounded">{refund.token_value}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">رقم الطلب:</span>
+                            <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs">{refund.order_id.slice(0, 8)}...</span>
+                          </div>
+                          {orderInfo && (
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-primary" />
+                              <span className="text-muted-foreground">المبلغ:</span>
+                              <span className="font-bold text-primary">${orderInfo.amount}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Reason */}
+                        {refund.reason && (
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">سبب الاسترداد:</p>
+                            <p className="text-sm">{refund.reason}</p>
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        {refund.status === 'pending' && (
+                          <div className="flex gap-2 pt-2">
+                            <button
+                              onClick={() => handleApproveRefund(refund)}
+                              className="flex-1 py-2 bg-success text-success-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              قبول الاسترداد
+                            </button>
+                            <button
+                              onClick={() => handleRejectRefund(refund.id)}
+                              className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              رفض
+                            </button>
+                          </div>
+                        )}
+
+                        {refund.processed_at && (
+                          <p className="text-xs text-muted-foreground">
+                            تم المعالجة: {new Date(refund.processed_at).toLocaleDateString('ar-EG')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

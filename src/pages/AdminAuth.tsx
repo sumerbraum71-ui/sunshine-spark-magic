@@ -81,10 +81,10 @@ const AdminAuth = () => {
       return;
     }
 
-    if (password.length < 6) {
+    if (!password) {
       toast({
         title: 'خطأ',
-        description: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+        description: 'يرجى إدخال كلمة المرور',
         variant: 'destructive',
       });
       return;
@@ -215,7 +215,6 @@ const AdminAuth = () => {
                   className="input-field w-full pr-10 pl-10"
                   placeholder="••••••••"
                   required
-                  minLength={6}
                 />
                 <button
                   type="button"

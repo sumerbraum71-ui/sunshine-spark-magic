@@ -4,11 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Package, Key, ShoppingBag, LogOut, Plus, Trash2, Edit2, Save, X,
   ChevronDown, ChevronUp, Settings, Copy, Eye, EyeOff, Clock, CheckCircle2,
-  XCircle, Loader2, LayoutGrid, Zap, Database, Bell, BellOff, TrendingUp, DollarSign, Users, MessageCircle, Link, RotateCcw, Ban
+  XCircle, Loader2, LayoutGrid, Zap, Database, Bell, BellOff, TrendingUp, DollarSign, Users, MessageCircle, Link, RotateCcw, Ban, Ticket, Shield
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useOrderNotification } from '@/hooks/useOrderNotification';
 import OrderChat from '@/components/OrderChat';
+import UserManagement from '@/components/admin/UserManagement';
+import CouponManagement from '@/components/admin/CouponManagement';
 
 interface Product {
   id: string;
@@ -637,7 +639,7 @@ const ProductCard = ({
 };
 
 const Admin = () => {
-  const [activeTab, setActiveTab] = useState<'products' | 'tokens' | 'orders' | 'refunds'>('orders');
+  const [activeTab, setActiveTab] = useState<'products' | 'tokens' | 'orders' | 'refunds' | 'users' | 'coupons'>('orders');
   const [products, setProducts] = useState<Product[]>([]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -1304,12 +1306,14 @@ const Admin = () => {
             { id: 'products', label: 'الأقسام', icon: Package, count: products.length },
             { id: 'tokens', label: 'التوكنات', icon: Key, count: tokens.length },
             { id: 'refunds', label: 'الاستردادات', icon: RotateCcw, count: refundRequests.filter(r => r.status === 'pending').length },
+            { id: 'coupons', label: 'الكوبونات', icon: Ticket, count: null },
+            { id: 'users', label: 'المستخدمين', icon: Shield, count: null },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'products' | 'tokens' | 'orders' | 'refunds')}
+                onClick={() => setActiveTab(tab.id as 'products' | 'tokens' | 'orders' | 'refunds' | 'users' | 'coupons')}
                 className={`flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
@@ -1318,11 +1322,13 @@ const Admin = () => {
               >
                 <Icon className="w-5 h-5" />
                 <span>{tab.label}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs ${
-                  activeTab === tab.id ? 'bg-primary-foreground/20' : 'bg-muted'
-                }`}>
-                  {tab.count}
-                </span>
+                {tab.count !== null && (
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                    activeTab === tab.id ? 'bg-primary-foreground/20' : 'bg-muted'
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -2113,6 +2119,12 @@ const Admin = () => {
           </div>
         </div>
       )}
+
+      {/* Users Tab */}
+      {activeTab === 'users' && <UserManagement />}
+
+      {/* Coupons Tab */}
+      {activeTab === 'coupons' && <CouponManagement />}
     </div>
   );
 };

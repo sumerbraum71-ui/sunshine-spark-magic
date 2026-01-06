@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
-import { ShoppingCart, Search, CheckCircle, AlertCircle, Loader2, Clock, XCircle, CheckCircle2, Copy, MessageCircle } from 'lucide-react';
+import { ShoppingCart, Search, CheckCircle, AlertCircle, Loader2, Clock, XCircle, CheckCircle2, Copy, MessageCircle, Ticket } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -82,6 +82,9 @@ const Index = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
   const [checkingActiveOrder, setCheckingActiveOrder] = useState(true);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_type: 'percentage' | 'fixed'; discount_value: number } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
   const { toast } = useToast();
 
   const product = products.find(p => p.id === selectedProductId);
@@ -241,6 +244,73 @@ const Index = () => {
     setStep('details');
   };
 
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    
+    setCouponLoading(true);
+    const { data, error } = await supabase
+      .from('coupons')
+      .select('*')
+      .eq('code', couponCode.toUpperCase().trim())
+      .eq('is_active', true)
+      .maybeSingle();
+
+    setCouponLoading(false);
+
+    if (error || !data) {
+      toast({
+        title: 'خطأ',
+        description: 'كود الكوبون غير صالح',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check expiry
+    if (data.expires_at && new Date(data.expires_at) < new Date()) {
+      toast({
+        title: 'خطأ',
+        description: 'كود الكوبون منتهي الصلاحية',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check max uses
+    if (data.max_uses && data.used_count >= data.max_uses) {
+      toast({
+        title: 'خطأ',
+        description: 'تم استخدام الكوبون الحد الأقصى للمرات',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setAppliedCoupon({
+      code: data.code,
+      discount_type: data.discount_type as 'percentage' | 'fixed',
+      discount_value: Number(data.discount_value)
+    });
+    
+    toast({
+      title: 'تم',
+      description: `تم تطبيق كوبون خصم ${data.discount_value}${data.discount_type === 'percentage' ? '%' : '$'}`,
+    });
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+  };
+
+  const calculateDiscount = (price: number) => {
+    if (!appliedCoupon) return 0;
+    if (appliedCoupon.discount_type === 'percentage') {
+      return (price * appliedCoupon.discount_value) / 100;
+    }
+    return Math.min(appliedCoupon.discount_value, price);
+  };
+
   const handleOrderSubmit = async () => {
     if (!selectedOption || !tokenData || !product) return;
 
@@ -249,7 +319,9 @@ const Index = () => {
     if (selectedOption.type === 'text' && !textInput.trim()) return;
 
     const isAutoDelivery = selectedOption.type === 'none' || !selectedOption.type;
-    const totalPrice = isAutoDelivery ? Number(selectedOption.price) * quantity : Number(selectedOption.price);
+    const basePrice = isAutoDelivery ? Number(selectedOption.price) * quantity : Number(selectedOption.price);
+    const discountAmount = calculateDiscount(basePrice);
+    const totalPrice = basePrice - discountAmount;
 
     if (tokenBalance === null || tokenBalance < totalPrice) {
       setResult('error');
@@ -288,6 +360,8 @@ const Index = () => {
         product_id: product.id,
         option_id: selectedOption.id,
         amount: totalPrice,
+        discount_amount: discountAmount,
+        coupon_code: appliedCoupon?.code || null,
         status: 'completed',
         response_message: combinedContent
       } as any).select('id, order_number').single();
@@ -313,6 +387,22 @@ const Index = () => {
         })
         .in('id', stockIds);
 
+      // Update coupon usage count
+      if (appliedCoupon) {
+        const { data: couponData } = await supabase
+          .from('coupons')
+          .select('used_count')
+          .eq('code', appliedCoupon.code)
+          .single();
+        
+        if (couponData) {
+          await supabase
+            .from('coupons')
+            .update({ used_count: (couponData.used_count || 0) + 1 })
+            .eq('code', appliedCoupon.code);
+        }
+      }
+
       // Deduct balance
       const newBalance = tokenBalance - totalPrice;
       await supabase
@@ -331,10 +421,14 @@ const Index = () => {
       setResult('success');
       setIsLoading(false);
       setStep('result');
+      setAppliedCoupon(null);
+      setCouponCode('');
       return;
     }
 
     // For manual delivery products
+    const manualTotalPrice = Number(selectedOption.price) - calculateDiscount(Number(selectedOption.price));
+    
     const { data: orderData, error: orderError } = await supabase.from('orders').insert({
       token_id: tokenData.id,
       product_id: product.id,
@@ -342,7 +436,9 @@ const Index = () => {
       email: selectedOption.type === 'email_password' ? email : null,
       password: selectedOption.type === 'email_password' ? password : null,
       verification_link: selectedOption.type === 'link' ? verificationLink : (selectedOption.type === 'text' ? textInput : null),
-      amount: selectedOption.price,
+      amount: manualTotalPrice,
+      discount_amount: calculateDiscount(Number(selectedOption.price)),
+      coupon_code: appliedCoupon?.code || null,
       status: 'pending'
     } as any).select('id, order_number').single();
 
@@ -356,8 +452,24 @@ const Index = () => {
       return;
     }
 
+    // Update coupon usage count
+    if (appliedCoupon) {
+      const { data: couponData } = await supabase
+        .from('coupons')
+        .select('used_count')
+        .eq('code', appliedCoupon.code)
+        .single();
+      
+      if (couponData) {
+        await supabase
+          .from('coupons')
+          .update({ used_count: (couponData.used_count || 0) + 1 })
+          .eq('code', appliedCoupon.code);
+      }
+    }
+
     // Deduct balance
-    const newBalance = tokenBalance - Number(selectedOption.price);
+    const newBalance = tokenBalance - manualTotalPrice;
     await supabase
       .from('tokens')
       .update({ balance: newBalance })
@@ -377,7 +489,7 @@ const Index = () => {
       response_message: null,
       product_id: product.id,
       option_id: selectedOption.id,
-      amount: Number(selectedOption.price)
+      amount: manualTotalPrice
     });
 
     setTokenBalance(newBalance);
@@ -713,7 +825,9 @@ const Index = () => {
 
           {step === 'details' && product && selectedOption && tokenBalance !== null && (() => {
             const isAutoDelivery = selectedOption.type === 'none' || !selectedOption.type;
-            const totalPrice = isAutoDelivery ? Number(selectedOption.price) * quantity : Number(selectedOption.price);
+            const basePrice = isAutoDelivery ? Number(selectedOption.price) * quantity : Number(selectedOption.price);
+            const discountAmount = calculateDiscount(basePrice);
+            const totalPrice = basePrice - discountAmount;
             const remainingBalance = tokenBalance - totalPrice;
 
             return (
@@ -733,18 +847,61 @@ const Index = () => {
                 {isAutoDelivery && quantity > 1 && (
                   <div className="flex items-center justify-between mt-1">
                     <span className="text-sm text-muted-foreground">الإجمالي:</span>
-                    <span className="font-bold text-primary">${totalPrice}</span>
+                    <span className="font-bold">${basePrice}</span>
+                  </div>
+                )}
+                {appliedCoupon && (
+                  <div className="flex items-center justify-between mt-1 text-success">
+                    <span className="text-sm">الخصم ({appliedCoupon.code}):</span>
+                    <span className="font-bold">-${discountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="border-t border-border mt-2 pt-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">المتبقي بعد الخصم:</span>
+                    <span className="text-sm font-medium">المبلغ النهائي:</span>
+                    <span className="font-bold text-primary">${totalPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-sm text-muted-foreground">المتبقي بعد الشراء:</span>
                     <span className={`font-bold ${remainingBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ${remainingBalance}
+                      ${remainingBalance.toFixed(2)}
                     </span>
                   </div>
                 </div>
               </div>
+
+              {/* Coupon Section */}
+              {!activeOrder && (
+                <div className="p-3 rounded-lg border border-border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Ticket className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">كوبون خصم</span>
+                  </div>
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between bg-success/10 text-success p-2 rounded-lg">
+                      <span className="text-sm font-medium">{appliedCoupon.code} - {appliedCoupon.discount_value}{appliedCoupon.discount_type === 'percentage' ? '%' : '$'}</span>
+                      <button onClick={removeCoupon} className="text-xs hover:underline">إزالة</button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        className="input-field flex-1 text-sm"
+                        placeholder="ادخل كود الكوبون"
+                      />
+                      <button
+                        onClick={applyCoupon}
+                        disabled={!couponCode.trim() || couponLoading}
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm disabled:opacity-50"
+                      >
+                        {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'تطبيق'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Show message for instant delivery (no data required) */}
               {isAutoDelivery && (

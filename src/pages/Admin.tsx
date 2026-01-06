@@ -50,7 +50,7 @@ interface Token {
 
 interface Order {
   id: string;
-  order_number: number;
+  order_number: string;
   token_id: string | null;
   product_id: string | null;
   option_id: string | null;

@@ -22,12 +22,6 @@ const Refund = () => {
       return;
     }
 
-    const orderNum = parseInt(orderNumber.trim());
-    if (isNaN(orderNum)) {
-      setError('رقم الطلب يجب أن يكون رقماً');
-      return;
-    }
-
     setIsLoading(true);
 
     // Verify token exists
@@ -47,7 +41,7 @@ const Refund = () => {
     const { data: orderData } = await supabase
       .from('orders')
       .select('id, status, amount')
-      .eq('order_number', orderNum)
+      .eq('order_number', orderNumber.trim())
       .eq('token_id', tokenData.id)
       .maybeSingle();
 

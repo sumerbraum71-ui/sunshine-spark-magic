@@ -4,10 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Package, Key, ShoppingBag, LogOut, Plus, Trash2, Edit2, Save, X,
   ChevronDown, ChevronUp, Settings, Copy, Eye, EyeOff, Clock, CheckCircle2,
-  XCircle, Loader2, LayoutGrid, Zap, Database, Bell, BellOff, TrendingUp, DollarSign, Users
+  XCircle, Loader2, LayoutGrid, Zap, Database, Bell, BellOff, TrendingUp, DollarSign, Users, MessageCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useOrderNotification } from '@/hooks/useOrderNotification';
+import OrderChat from '@/components/OrderChat';
 
 interface Product {
   id: string;
@@ -86,6 +87,7 @@ const OrderCard = ({
   const [message, setMessage] = useState(order.response_message || '');
   const [selectedStatus, setSelectedStatus] = useState(order.status);
   const [showPassword, setShowPassword] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = () => {
@@ -196,11 +198,30 @@ const OrderCard = ({
               <Save className="w-4 h-4" />
               <span>حفظ</span>
             </button>
+            {order.status === 'in_progress' && (
+              <button 
+                onClick={() => setShowChat(!showChat)} 
+                className={`p-2.5 border rounded-lg transition-colors ${
+                  showChat 
+                    ? 'border-primary bg-primary/10 text-primary' 
+                    : 'border-border hover:bg-muted'
+                }`}
+              >
+                <MessageCircle className="w-4 h-4" />
+              </button>
+            )}
             <button onClick={() => onDelete(order.id)} className="p-2.5 border border-destructive/30 text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </div>
+
+        {/* Chat Section */}
+        {showChat && order.status === 'in_progress' && (
+          <div className="pt-4 border-t border-border">
+            <OrderChat orderId={order.id} senderType="admin" />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -273,16 +273,24 @@ const RefundCard = ({
 }: {
   refund: RefundRequest;
   orderInfo: Order | undefined;
-  onApprove: (refund: RefundRequest) => void;
+  onApprove: (refund: RefundRequest, adminNote: string) => void;
   onReject: (refundId: string, adminNote: string) => void;
 }) => {
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [showApproveForm, setShowApproveForm] = useState(false);
   const [rejectNote, setRejectNote] = useState('');
+  const [approveNote, setApproveNote] = useState('');
 
   const handleReject = () => {
     onReject(refund.id, rejectNote);
     setShowRejectForm(false);
     setRejectNote('');
+  };
+
+  const handleApprove = () => {
+    onApprove(refund, approveNote);
+    setShowApproveForm(false);
+    setApproveNote('');
   };
 
   return (
@@ -348,19 +356,29 @@ const RefundCard = ({
           </div>
         )}
 
-        {/* Admin Note for rejected */}
-        {refund.status === 'rejected' && refund.admin_note && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-            <p className="text-xs text-destructive mb-1">سبب الرفض:</p>
-            <p className="text-sm text-destructive">{refund.admin_note}</p>
+        {/* Admin Note */}
+        {refund.admin_note && (
+          <div className={`p-3 rounded-lg border ${
+            refund.status === 'rejected' 
+              ? 'bg-destructive/10 border-destructive/20' 
+              : 'bg-primary/10 border-primary/20'
+          }`}>
+            <p className={`text-xs mb-1 ${
+              refund.status === 'rejected' ? 'text-destructive' : 'text-primary'
+            }`}>
+              {refund.status === 'rejected' ? 'سبب الرفض:' : 'ملاحظة:'}
+            </p>
+            <p className={`text-sm ${
+              refund.status === 'rejected' ? 'text-destructive' : 'text-foreground'
+            }`}>{refund.admin_note}</p>
           </div>
         )}
 
         {/* Actions */}
-        {refund.status === 'pending' && !showRejectForm && (
+        {refund.status === 'pending' && !showRejectForm && !showApproveForm && (
           <div className="flex gap-2 pt-2">
             <button
-              onClick={() => onApprove(refund)}
+              onClick={() => setShowApproveForm(true)}
               className="flex-1 py-2 bg-success text-success-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
@@ -373,6 +391,36 @@ const RefundCard = ({
               <XCircle className="w-4 h-4" />
               رفض
             </button>
+          </div>
+        )}
+
+        {/* Approve Form */}
+        {refund.status === 'pending' && showApproveForm && (
+          <div className="pt-2 space-y-3 border-t border-border">
+            <div>
+              <label className="text-sm font-medium mb-2 block">ملاحظة للعميل (اختياري)</label>
+              <textarea
+                value={approveNote}
+                onChange={(e) => setApproveNote(e.target.value)}
+                className="input-field w-full h-20"
+                placeholder="اكتب ملاحظة تظهر للعميل..."
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleApprove}
+                className="flex-1 py-2 bg-success text-success-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                تأكيد القبول
+              </button>
+              <button
+                onClick={() => { setShowApproveForm(false); setApproveNote(''); }}
+                className="px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors"
+              >
+                إلغاء
+              </button>
+            </div>
           </div>
         )}
 
@@ -1052,7 +1100,7 @@ const Admin = () => {
   };
 
   // Refund handlers
-  const handleApproveRefund = async (refund: RefundRequest) => {
+  const handleApproveRefund = async (refund: RefundRequest, adminNote: string) => {
     // Get the order amount
     const { data: orderData } = await supabase
       .from('orders')
@@ -1094,7 +1142,8 @@ const Admin = () => {
       .from('refund_requests')
       .update({ 
         status: 'approved', 
-        processed_at: new Date().toISOString() 
+        processed_at: new Date().toISOString(),
+        admin_note: adminNote || null
       })
       .eq('id', refund.id);
 

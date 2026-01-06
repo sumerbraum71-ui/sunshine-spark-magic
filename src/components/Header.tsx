@@ -1,4 +1,5 @@
 import { Newspaper, HelpCircle, Users, Coins, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Header = () => {
   return (
@@ -6,7 +7,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <div>
+          <Link to="/">
             <h1 className="text-2xl md:text-3xl font-bold">
               <span className="text-primary">API</span>{' '}
               <span className="text-foreground">Hub Dashboard</span>
@@ -14,7 +15,7 @@ const Header = () => {
             <p className="text-sm text-muted-foreground">
               إدارة طلبات API وعرض سجل المعاملات
             </p>
-          </div>
+          </Link>
 
           {/* Navigation Buttons */}
           <div className="hidden md:flex items-center gap-2 flex-wrap justify-end">
@@ -22,10 +23,10 @@ const Header = () => {
               <Newspaper className="w-4 h-4" />
               الأخبار
             </button>
-            <button className="nav-btn bg-secondary text-secondary-foreground hover:bg-muted flex items-center gap-2">
+            <Link to="/faq" className="nav-btn bg-secondary text-secondary-foreground hover:bg-muted flex items-center gap-2">
               <HelpCircle className="w-4 h-4" />
               الأسئلة
-            </button>
+            </Link>
             <button className="nav-btn bg-accent text-accent-foreground hover:opacity-90 flex items-center gap-2">
               <Users className="w-4 h-4" />
               Reseller HUB

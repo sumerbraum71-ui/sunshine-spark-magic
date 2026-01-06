@@ -1,0 +1,409 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
+  }
+  public: {
+    Tables: {
+      orders: {
+        Row: {
+          amount: number
+          created_at: string
+          email: string | null
+          id: string
+          option_id: string | null
+          password: string | null
+          product_id: string | null
+          response_message: string | null
+          status: string
+          token_id: string | null
+          verification_link: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          option_id?: string | null
+          password?: string | null
+          product_id?: string | null
+          response_message?: string | null
+          status?: string
+          token_id?: string | null
+          verification_link?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          option_id?: string | null
+          password?: string | null
+          product_id?: string | null
+          response_message?: string | null
+          status?: string
+          token_id?: string | null
+          verification_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_options: {
+        Row: {
+          available: number | null
+          created_at: string
+          description: string | null
+          duration: string | null
+          estimated_time: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+          product_id: string
+          type: string | null
+        }
+        Insert: {
+          available?: number | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          estimated_time?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price?: number
+          product_id: string
+          type?: string | null
+        }
+        Update: {
+          available?: number | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          estimated_time?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          product_id?: string
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_options_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          available: number | null
+          created_at: string
+          description: string | null
+          duration: string | null
+          id: string
+          image: string | null
+          instant_delivery: boolean | null
+          name: string
+          price: number
+        }
+        Insert: {
+          available?: number | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          image?: string | null
+          instant_delivery?: boolean | null
+          name: string
+          price?: number
+        }
+        Update: {
+          available?: number | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          image?: string | null
+          instant_delivery?: boolean | null
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      stock_items: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_sold: boolean | null
+          option_id: string | null
+          product_id: string | null
+          sold_at: string | null
+          sold_to_order_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_sold?: boolean | null
+          option_id?: string | null
+          product_id?: string | null
+          sold_at?: string | null
+          sold_to_order_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_sold?: boolean | null
+          option_id?: string | null
+          product_id?: string | null
+          sold_at?: string | null
+          sold_to_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_items_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_items_sold_to_order_id_fkey"
+            columns: ["sold_to_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tokens: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          token: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          token: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          token?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+    }
+    Enums: {
+      app_role: "admin" | "user"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      app_role: ["admin", "user"],
+    },
+  },
+} as const

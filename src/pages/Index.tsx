@@ -37,7 +37,7 @@ interface ProductOption {
 
 interface Order {
   id: string;
-  order_number: number;
+  order_number: string;
   product_id: string | null;
   option_id: string | null;
   amount: number;
@@ -48,7 +48,7 @@ interface Order {
 
 interface ActiveOrder {
   id: string;
-  order_number: number;
+  order_number: string;
   status: string;
   response_message: string | null;
   product_id: string | null;
@@ -958,7 +958,7 @@ const Index = () => {
                 <div className="bg-muted/50 rounded-xl p-3 space-y-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">رقم الطلب:</span>
-                    <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
+                    <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
                       #{activeOrder.order_number}
                     </span>
                   </div>
@@ -1066,7 +1066,7 @@ const Index = () => {
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-mono text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                                        <span className="font-mono text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">
                                           #{order.order_number}
                                         </span>
                                       </div>

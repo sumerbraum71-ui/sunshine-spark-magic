@@ -15,19 +15,58 @@ const AdminAuth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Convert username to a fake email for Supabase Auth
+  const usernameToEmail = (user: string) => `${user.toLowerCase().trim()}@admin.local`;
+
   useEffect(() => {
     // Check existing session on mount
-    const checkExistingSession = () => {
-      const savedUser = localStorage.getItem('admin_user');
-      if (savedUser) {
-        navigate('/admin');
-        return;
+    const checkExistingSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const hasAccess = await checkUserAccess(session.user.id);
+        if (hasAccess) {
+          navigate('/admin');
+          return;
+        }
       }
       setIsCheckingAuth(false);
     };
 
     checkExistingSession();
   }, []);
+
+  const checkUserAccess = async (userId: string): Promise<boolean> => {
+    // Check if admin
+    const { data: isAdmin } = await supabase.rpc('has_role', {
+      _user_id: userId,
+      _role: 'admin',
+    });
+
+    if (isAdmin) {
+      return true;
+    }
+
+    // Check for any permissions
+    const { data: permissions } = await supabase
+      .from('user_permissions')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (permissions) {
+      const hasAnyPermission = 
+        permissions.can_manage_orders ||
+        permissions.can_manage_products ||
+        permissions.can_manage_tokens ||
+        permissions.can_manage_refunds ||
+        permissions.can_manage_users ||
+        permissions.can_manage_coupons;
+
+      return hasAnyPermission;
+    }
+
+    return false;
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,62 +93,66 @@ const AdminAuth = () => {
     isHandlingAuth.current = true;
     setIsLoading(true);
 
+    const fakeEmail = usernameToEmail(username);
+
     try {
       if (isSignUp) {
-        // Check if username already exists
-        const { data: existing } = await supabase
-          .from('admin_users')
-          .select('id')
-          .eq('username', username.trim().toLowerCase())
-          .maybeSingle();
+        const { data, error } = await supabase.auth.signUp({
+          email: fakeEmail,
+          password,
+          options: {
+            data: {
+              username: username.trim(),
+            }
+          }
+        });
 
-        if (existing) {
-          throw new Error('اسم المستخدم مستخدم بالفعل');
+        if (error) {
+          if (error.message.includes('already registered')) {
+            throw new Error('اسم المستخدم مستخدم بالفعل');
+          }
+          throw error;
         }
 
-        // Create new user
-        const { error } = await supabase
-          .from('admin_users')
-          .insert({
-            username: username.trim().toLowerCase(),
-            password: password,
-            is_admin: false, // New users are not admin by default
+        if (data.user) {
+          toast({
+            title: 'تم إنشاء الحساب',
+            description: 'تم إنشاء حسابك بنجاح. يرجى الانتظار حتى يتم منحك الصلاحيات من قبل الأدمن.',
           });
-
-        if (error) throw error;
-
-        toast({
-          title: 'تم إنشاء الحساب',
-          description: 'تم إنشاء حسابك بنجاح. يرجى الانتظار حتى يتم منحك الصلاحيات.',
-        });
-        setIsSignUp(false);
+          await supabase.auth.signOut();
+        }
       } else {
-        // Login - verify credentials
-        const { data: user, error } = await supabase
-          .from('admin_users')
-          .select('*')
-          .eq('username', username.trim().toLowerCase())
-          .eq('password', password)
-          .maybeSingle();
-
-        if (error) throw error;
-
-        if (!user) {
-          throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
-        }
-
-        if (!user.is_admin) {
-          throw new Error('هذا الحساب ليس لديه صلاحيات للوصول للوحة التحكم');
-        }
-
-        // Save session
-        localStorage.setItem('admin_user', JSON.stringify(user));
-
-        toast({
-          title: 'تم تسجيل الدخول',
-          description: 'مرحباً بك في لوحة التحكم',
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: fakeEmail,
+          password,
         });
-        navigate('/admin');
+
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
+          }
+          throw error;
+        }
+
+        if (data.user) {
+          const hasAccess = await checkUserAccess(data.user.id);
+
+          if (!hasAccess) {
+            await supabase.auth.signOut();
+            toast({
+              title: 'غير مصرح',
+              description: 'هذا الحساب ليس لديه صلاحيات للوصول للوحة التحكم',
+              variant: 'destructive',
+            });
+            return;
+          }
+
+          toast({
+            title: 'تم تسجيل الدخول',
+            description: 'مرحباً بك في لوحة التحكم',
+          });
+          navigate('/admin');
+        }
       }
     } catch (error: any) {
       toast({

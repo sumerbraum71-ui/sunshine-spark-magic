@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
-import { ShoppingCart, Search, CheckCircle, AlertCircle, Loader2, Clock, XCircle, CheckCircle2, Copy } from 'lucide-react';
+import { ShoppingCart, Search, CheckCircle, AlertCircle, Loader2, Clock, XCircle, CheckCircle2, Copy, MessageCircle } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import OrderChat from '@/components/OrderChat';
 
 interface Product {
   id: string;
@@ -44,6 +45,17 @@ interface Order {
   response_message: string | null;
 }
 
+interface ActiveOrder {
+  id: string;
+  status: string;
+  response_message: string | null;
+  product_id: string | null;
+  option_id: string | null;
+  amount: number;
+}
+
+const ACTIVE_ORDER_KEY = 'active_order';
+
 const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
@@ -66,15 +78,100 @@ const Index = () => {
   const [tokenOrders, setTokenOrders] = useState<Order[]>([]);
   const [optionStockCounts, setOptionStockCounts] = useState<Record<string, number>>({});
   const [quantity, setQuantity] = useState(1);
+  const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
+  const [checkingActiveOrder, setCheckingActiveOrder] = useState(true);
   const { toast } = useToast();
 
   const product = products.find(p => p.id === selectedProductId);
   const options = productOptions.filter(o => o.product_id === selectedProductId);
   const selectedOption = productOptions.find(o => o.id === selectedOptionId);
 
+  // Check for active order on mount
   useEffect(() => {
+    const checkActiveOrder = async () => {
+      const stored = localStorage.getItem(ACTIVE_ORDER_KEY);
+      if (stored) {
+        const { orderId, tokenValue } = JSON.parse(stored);
+        
+        // Fetch order status from database
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select('id, status, response_message, product_id, option_id, amount')
+          .eq('id', orderId)
+          .single();
+        
+        if (orderData) {
+          // If order is still pending or in_progress, show it
+          if (orderData.status === 'pending' || orderData.status === 'in_progress') {
+            setActiveOrder(orderData);
+            setToken(tokenValue);
+            
+            // Fetch token data
+            const tokenData = await verifyToken(tokenValue);
+            if (tokenData) {
+              setTokenData(tokenData);
+              setTokenBalance(Number(tokenData.balance));
+            }
+          } else {
+            // Order is completed or rejected, clear storage
+            localStorage.removeItem(ACTIVE_ORDER_KEY);
+          }
+        } else {
+          localStorage.removeItem(ACTIVE_ORDER_KEY);
+        }
+      }
+      setCheckingActiveOrder(false);
+    };
+
+    checkActiveOrder();
     fetchProducts();
   }, []);
+
+  // Subscribe to active order updates
+  useEffect(() => {
+    if (!activeOrder) return;
+
+    const channel = supabase
+      .channel(`active-order-${activeOrder.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${activeOrder.id}`
+        },
+        async (payload) => {
+          const updated = payload.new as ActiveOrder;
+          
+          if (updated.status === 'completed' || updated.status === 'rejected') {
+            // Refund if rejected
+            if (updated.status === 'rejected' && tokenData) {
+              const newBalance = (tokenBalance || 0) + Number(updated.amount);
+              await supabase
+                .from('tokens')
+                .update({ balance: newBalance })
+                .eq('id', tokenData.id);
+              setTokenBalance(newBalance);
+            }
+            
+            // Clear active order
+            localStorage.removeItem(ACTIVE_ORDER_KEY);
+            setActiveOrder(null);
+            setResponseMessage(updated.response_message);
+            setResult(updated.status === 'completed' ? 'success' : 'error');
+            setStep('result');
+          } else {
+            setActiveOrder(updated);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeOrder, tokenData, tokenBalance]);
 
   const fetchProducts = async () => {
     const { data: productsData } = await supabase.from('products').select('*').order('name');
@@ -255,15 +352,32 @@ const Index = () => {
       .update({ balance: newBalance })
       .eq('id', tokenData.id);
 
+    // Store active order in localStorage
+    localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify({
+      orderId: orderData.id,
+      tokenValue: token
+    }));
+
+    // Set active order
+    setActiveOrder({
+      id: orderData.id,
+      status: 'pending',
+      response_message: null,
+      product_id: product.id,
+      option_id: selectedOption.id,
+      amount: Number(selectedOption.price)
+    });
+
     setTokenBalance(newBalance);
     setCurrentOrderId(orderData.id);
     setOrderStatus('pending');
     setResponseMessage(null);
     setIsLoading(false);
-    setStep('waiting');
   };
 
   const handleReset = () => {
+    localStorage.removeItem(ACTIVE_ORDER_KEY);
+    setActiveOrder(null);
     setToken('');
     setVerificationLink('');
     setEmail('');
@@ -391,6 +505,92 @@ const Index = () => {
     }
     return product?.name || option?.name || 'غير معروف';
   };
+
+  // Show loading while checking for active order
+  if (checkingActiveOrder) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  // Show active order view if exists
+  if (activeOrder) {
+    const orderProduct = products.find(p => p.id === activeOrder.product_id);
+    const orderOption = productOptions.find(o => o.id === activeOrder.option_id);
+    
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-6 max-w-2xl">
+          <div className="card-simple p-6 space-y-6">
+            {/* Order Status Header */}
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              </div>
+              <h2 className="text-xl font-bold">
+                {activeOrder.status === 'in_progress' ? 'جاري تنفيذ طلبك' : 'جاري معالجة طلبك'}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                لا يمكنك إجراء طلب جديد حتى ينتهي هذا الطلب
+              </p>
+            </div>
+
+            {/* Order Details */}
+            <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">المنتج:</span>
+                <span className="font-medium">
+                  {orderProduct && orderOption ? `${orderProduct.name} - ${orderOption.name}` : 'غير معروف'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">المبلغ:</span>
+                <span className="font-bold text-primary">${activeOrder.amount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">الحالة:</span>
+                <span className={`flex items-center gap-1 text-sm font-medium ${
+                  activeOrder.status === 'in_progress' ? 'text-blue-600' : 'text-yellow-600'
+                }`}>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {activeOrder.status === 'in_progress' ? 'قيد التنفيذ' : 'قيد الانتظار'}
+                </span>
+              </div>
+              {tokenBalance !== null && (
+                <div className="flex items-center justify-between pt-2 border-t border-border">
+                  <span className="text-sm text-muted-foreground">الرصيد المتبقي:</span>
+                  <span className="font-bold">${tokenBalance}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Chat Section - Only show when in_progress */}
+            {activeOrder.status === 'in_progress' && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <MessageCircle className="w-4 h-4 text-primary" />
+                  <span className="font-medium text-sm">تواصل مع الدعم</span>
+                </div>
+                <OrderChat orderId={activeOrder.id} senderType="customer" />
+              </div>
+            )}
+
+            {activeOrder.status === 'pending' && (
+              <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <Clock className="w-6 h-6 text-yellow-600 mx-auto mb-2" />
+                <p className="text-sm text-yellow-800">
+                  طلبك قيد المراجعة. سيتم إتاحة المحادثة عند بدء التنفيذ.
+                </p>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

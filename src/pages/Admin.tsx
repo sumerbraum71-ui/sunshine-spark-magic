@@ -824,11 +824,13 @@ const Admin = () => {
     }
 
     // Check if user has any permissions
-    const { data: permissions } = await supabase
+    const { data: permissions, error: permError } = await supabase
       .from('user_permissions')
       .select('*')
       .eq('user_id', session.user.id)
-      .single();
+      .maybeSingle();
+
+    console.log('Permissions check:', { permissions, permError, userId: session.user.id });
 
     const hasAnyPermission = permissions && (
       permissions.can_manage_orders ||

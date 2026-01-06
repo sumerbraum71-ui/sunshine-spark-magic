@@ -141,7 +141,18 @@ const OrderCard = ({
           <span className="text-xl font-bold text-primary">${order.amount}</span>
           
           {order.verification_link && (
-            <span className="text-sm text-primary">رابط التحقق م</span>
+            <a
+              href={order.verification_link.startsWith('http') ? order.verification_link : `https://${order.verification_link}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                copyToClipboard(order.verification_link!, 'رابط التحقق');
+              }}
+            >
+              رابط التحقق: {order.verification_link}
+            </a>
           )}
         </div>
 

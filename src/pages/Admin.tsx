@@ -880,98 +880,125 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-50">
+      <header className="bg-card border-b border-border sticky top-0 z-20">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold">
-                <span className="text-primary">لوحة</span> التحكم
-              </h1>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                <Settings className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold">لوحة التحكم</h1>
+                <p className="text-xs text-muted-foreground">إدارة المنتجات والطلبات</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setNotificationsEnabled(!notificationsEnabled)}
-                className={`p-2 rounded-lg transition-colors ${notificationsEnabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                  notificationsEnabled
+                    ? 'bg-success/10 text-success hover:bg-success/20'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
                 title={notificationsEnabled ? 'إيقاف الإشعارات' : 'تفعيل الإشعارات'}
               >
                 {notificationsEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+                <span className="hidden sm:inline text-sm">{notificationsEnabled ? 'الإشعارات مفعلة' : 'الإشعارات متوقفة'}</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-destructive/10 text-destructive rounded-lg hover:bg-destructive/20 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
               >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden md:inline">خروج</span>
+                <LogOut className="w-5 h-5" />
+                <span className="hidden sm:inline">خروج</span>
               </button>
             </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-            <div className="bg-success/10 border border-success/20 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-success">
-                <DollarSign className="w-4 h-4" />
-                <span className="text-xs font-medium">أرباح اليوم</span>
-              </div>
-              <p className="text-xl font-bold mt-1">${todayStats.totalEarnings}</p>
-            </div>
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-primary">
-                <ShoppingBag className="w-4 h-4" />
-                <span className="text-xs font-medium">طلبات اليوم</span>
-              </div>
-              <p className="text-xl font-bold mt-1">{todayStats.totalOrders}</p>
-            </div>
-            <div className="bg-info/10 border border-info/20 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-info">
-                <TrendingUp className="w-4 h-4" />
-                <span className="text-xs font-medium">مكتمل</span>
-              </div>
-              <p className="text-xl font-bold mt-1">{todayStats.completedOrders}</p>
-            </div>
-            <div className="bg-warning/10 border border-warning/20 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-warning">
-                <Users className="w-4 h-4" />
-                <span className="text-xs font-medium">شحنات</span>
-              </div>
-              <p className="text-xl font-bold mt-1">{todayStats.totalRecharges}</p>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-            <button
-              onClick={() => setActiveTab('orders')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                activeTab === 'orders' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              <ShoppingBag className="w-4 h-4" />
-              الطلبات ({orders.filter(o => o.status === 'pending').length})
-            </button>
-            <button
-              onClick={() => setActiveTab('products')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                activeTab === 'products' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              <Package className="w-4 h-4" />
-              المنتجات
-            </button>
-            <button
-              onClick={() => setActiveTab('tokens')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                activeTab === 'tokens' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              <Key className="w-4 h-4" />
-              التوكنات
-            </button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6">
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {[
+            { id: 'orders', label: 'الطلبات', icon: ShoppingBag, count: orders.length },
+            { id: 'products', label: 'الأقسام', icon: Package, count: products.length },
+            { id: 'tokens', label: 'التوكنات', icon: Key, count: tokens.length },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as 'products' | 'tokens' | 'orders')}
+                className={`flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                    : 'bg-card hover:bg-muted border border-border'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{tab.label}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  activeTab === tab.id ? 'bg-primary-foreground/20' : 'bg-muted'
+                }`}>
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Today's Statistics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-success" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">أرباح اليوم</p>
+                <p className="text-xl font-bold text-success">${todayStats.totalEarnings}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">طلبات اليوم</p>
+                <p className="text-xl font-bold text-primary">{todayStats.totalOrders}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-info" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">طلبات مكتملة</p>
+                <p className="text-xl font-bold text-info">{todayStats.completedOrders}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                <Users className="w-5 h-5 text-warning" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">شحنات اليوم</p>
+                <p className="text-xl font-bold text-warning">{todayStats.totalRecharges}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Orders Tab */}
         {activeTab === 'orders' && (
           <div className="space-y-4">
@@ -1112,69 +1139,224 @@ const Admin = () => {
             )}
           </div>
         )}
-      </main>
+      </div>
 
       {/* Product Modal */}
       {showProductModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-xl border border-border w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h2 className="text-lg font-bold">{editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h2>
-              <button onClick={() => setShowProductModal(false)} className="p-2 hover:bg-muted rounded-lg">
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-card rounded-2xl w-full max-w-2xl shadow-2xl my-8">
+            {/* Header */}
+            <div className="p-6 border-b border-border bg-gradient-to-r from-primary/5 to-transparent">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Package className="w-5 h-5 text-primary" />
+                {editingProduct ? 'تعديل القسم' : 'إضافة قسم جديد'}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">القسم يحتوي على المنتجات المتشابهة (مثل: حسابات جيميل)</p>
+            </div>
+
+            <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto">
+              {/* Section 1: Basic Info */}
+              <div className="bg-muted/20 rounded-xl p-4 border border-border">
+                <h3 className="text-sm font-bold text-primary mb-4 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs">1</span>
+                  معلومات القسم الأساسية
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-2 block">اسم القسم *</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: حسابات جيميل، حسابات نتفليكس..."
+                      value={productForm.name}
+                      onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                      className="input-field w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Products/Options */}
+              {!editingProduct && (
+                <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-primary flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs">2</span>
+                      المنتجات (الخيارات المتاحة)
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={addNewProductOption}
+                      className="bg-primary text-primary-foreground text-sm px-3 py-1.5 rounded-lg flex items-center gap-1 font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" /> إضافة منتج
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    مثال: لو القسم "حسابات جيميل" → المنتجات تكون: "شهر واحد"، "شهرين"، "3 شهور"
+                  </p>
+
+                  {newProductOptions.length === 0 ? (
+                    <div className="text-center py-8 bg-background/50 rounded-lg border-2 border-dashed border-border">
+                      <LayoutGrid className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">لا توجد منتجات</p>
+                      <p className="text-xs text-muted-foreground mt-1">اضغط على "إضافة منتج" لإضافة خيارات للقسم</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {newProductOptions.map((opt, index) => (
+                        <div key={index} className="bg-background rounded-lg p-4 border border-border shadow-sm">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-bold text-foreground flex items-center gap-2">
+                              <span className="w-5 h-5 rounded bg-primary/10 text-primary flex items-center justify-center text-xs">{index + 1}</span>
+                              المنتج #{index + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeNewProductOption(index)}
+                              className="p-1.5 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Row 1: Name, Duration, Price */}
+                          <div className="grid grid-cols-3 gap-3 mb-3">
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-1 block">اسم المنتج *</label>
+                              <input
+                                type="text"
+                                placeholder="مثال: نتفليكس برايم"
+                                value={opt.name}
+                                onChange={(e) => updateNewProductOption(index, 'name', e.target.value)}
+                                className="input-field text-sm w-full"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-1 block">مدة الاشتراك</label>
+                              <input
+                                type="text"
+                                placeholder="مثال: شهر واحد"
+                                value={opt.duration}
+                                onChange={(e) => updateNewProductOption(index, 'duration', e.target.value)}
+                                className="input-field text-sm w-full"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-1 block">السعر ($) *</label>
+                              <input
+                                type="number"
+                                placeholder="0"
+                                value={opt.price || ''}
+                                onChange={(e) => updateNewProductOption(index, 'price', parseFloat(e.target.value) || 0)}
+                                className="input-field text-sm w-full"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Row 2: Delivery Type */}
+                          <div className="mb-3">
+                            <label className="text-xs text-muted-foreground mb-2 block">نوع التسليم</label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => updateNewProductOption(index, 'delivery_type', 'manual')}
+                                className={`flex-1 py-2.5 px-3 rounded-lg border text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                                  opt.delivery_type === 'manual'
+                                    ? 'bg-warning/10 border-warning text-warning'
+                                    : 'border-border hover:bg-muted'
+                                }`}
+                              >
+                                <Clock className="w-4 h-4" />
+                                يدوي (خدمات)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateNewProductOption(index, 'delivery_type', 'auto')}
+                                className={`flex-1 py-2.5 px-3 rounded-lg border text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                                  opt.delivery_type === 'auto'
+                                    ? 'bg-success/10 border-success text-success'
+                                    : 'border-border hover:bg-muted'
+                                }`}
+                              >
+                                <Zap className="w-4 h-4" />
+                                تلقائي (اكونتات)
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Manual: Show input type required from customer */}
+                          {opt.delivery_type === 'manual' && (
+                            <div className="grid grid-cols-2 gap-3 mb-3 p-3 bg-warning/5 rounded-lg border border-warning/20">
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">البيانات المطلوبة من العميل</label>
+                                <select
+                                  value={opt.input_type}
+                                  onChange={(e) => updateNewProductOption(index, 'input_type', e.target.value)}
+                                  className="input-field text-sm w-full"
+                                >
+                                  <option value="email_password">إيميل وباسورد</option>
+                                  <option value="link">رابط فقط</option>
+                                  <option value="text">نص</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">الوقت المتوقع للتنفيذ</label>
+                                <input
+                                  type="text"
+                                  placeholder="مثال: 24 ساعة"
+                                  value={opt.estimated_time}
+                                  onChange={(e) => updateNewProductOption(index, 'estimated_time', e.target.value)}
+                                  className="input-field text-sm w-full"
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Auto: Show stock content input */}
+                          {opt.delivery_type === 'auto' && (
+                            <div className="p-3 bg-success/5 rounded-lg border border-success/20 mb-3">
+                              <label className="text-xs text-muted-foreground mb-1 block">
+                                الداتا للعميل (كل سطر = منتج واحد)
+                              </label>
+                              <textarea
+                                placeholder={`مثال:\nemail1@gmail.com:password123\nemail2@gmail.com:password456`}
+                                value={opt.stock_content}
+                                onChange={(e) => updateNewProductOption(index, 'stock_content', e.target.value)}
+                                className="input-field text-sm w-full h-24 resize-none font-mono"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                المخزون الحالي: {opt.stock_content.split('\n').filter(line => line.trim()).length} منتج
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Description */}
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">وصف (اختياري)</label>
+                            <input
+                              type="text"
+                              placeholder="وصف مختصر للمنتج..."
+                              value={opt.description}
+                              onChange={(e) => updateNewProductOption(index, 'description', e.target.value)}
+                              className="input-field w-full text-sm"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-border bg-muted/20 flex gap-3">
+              <button onClick={handleSaveProduct} className="btn-primary flex-1 py-3 flex items-center justify-center gap-2 text-base">
+                <Save className="w-5 h-5" />
+                {editingProduct ? 'حفظ التغييرات' : 'إنشاء القسم'}
               </button>
-            </div>
-            <div className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">اسم المنتج</label>
-                <input
-                  type="text"
-                  value={productForm.name}
-                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                  className="input-field w-full"
-                  placeholder="اسم المنتج"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-2">السعر الأساسي</label>
-                  <input
-                    type="number"
-                    value={productForm.price}
-                    onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })}
-                    className="input-field w-full"
-                    min={0}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">المدة</label>
-                  <input
-                    type="text"
-                    value={productForm.duration}
-                    onChange={(e) => setProductForm({ ...productForm, duration: e.target.value })}
-                    className="input-field w-full"
-                    placeholder="شهر واحد"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={productForm.instant_delivery}
-                    onChange={(e) => setProductForm({ ...productForm, instant_delivery: e.target.checked })}
-                    className="w-4 h-4 rounded border-border"
-                  />
-                  <span className="text-sm">استلام فوري (من المخزون)</span>
-                </label>
-              </div>
-            </div>
-            <div className="flex gap-3 p-4 border-t border-border">
-              <button onClick={() => setShowProductModal(false)} className="flex-1 py-2.5 border border-border rounded-lg hover:bg-muted transition-colors">
+              <button onClick={() => setShowProductModal(false)} className="px-8 py-3 border border-border rounded-lg hover:bg-muted transition-colors font-medium">
                 إلغاء
-              </button>
-              <button onClick={handleSaveProduct} className="btn-primary flex-1 py-2.5">
-                حفظ
               </button>
             </div>
           </div>
@@ -1184,97 +1366,179 @@ const Admin = () => {
       {/* Option Modal */}
       {showOptionModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-xl border border-border w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h2 className="text-lg font-bold">{editingOption ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h2>
-              <button onClick={() => setShowOptionModal(false)} className="p-2 hover:bg-muted rounded-lg">
-                <X className="w-5 h-5" />
-              </button>
+          <div className="bg-card rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="p-6 border-b border-border">
+              <h2 className="text-xl font-bold">{editingOption ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h2>
             </div>
-            <div className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">اسم المنتج</label>
-                <input
-                  type="text"
-                  value={optionForm.name}
-                  onChange={(e) => setOptionForm({ ...optionForm, name: e.target.value })}
-                  className="input-field w-full"
-                  placeholder="اسم المنتج"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">نوع التسليم</label>
-                <select
-                  value={optionForm.delivery_type}
-                  onChange={(e) => setOptionForm({ ...optionForm, delivery_type: e.target.value })}
-                  className="input-field w-full"
-                >
-                  <option value="manual">تسليم يدوي</option>
-                  <option value="auto">استلام فوري (من المخزون)</option>
-                </select>
-              </div>
-              {optionForm.delivery_type === 'manual' && (
+            <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+              {/* Row 1: Name, Duration, Price */}
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-2">نوع البيانات المطلوبة</label>
-                  <select
-                    value={optionForm.type}
-                    onChange={(e) => setOptionForm({ ...optionForm, type: e.target.value })}
-                    className="input-field w-full"
-                  >
-                    <option value="email_password">إيميل وباسورد</option>
-                    <option value="link">رابط فقط</option>
-                    <option value="text">نص</option>
-                  </select>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-2">السعر</label>
-                  <input
-                    type="number"
-                    value={optionForm.price}
-                    onChange={(e) => setOptionForm({ ...optionForm, price: Number(e.target.value) })}
-                    className="input-field w-full"
-                    min={0}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">الوقت المتوقع</label>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">اسم المنتج *</label>
                   <input
                     type="text"
-                    value={optionForm.estimated_time}
-                    onChange={(e) => setOptionForm({ ...optionForm, estimated_time: e.target.value })}
+                    placeholder="مثال: نتفليكس برايم"
+                    value={optionForm.name}
+                    onChange={(e) => setOptionForm({ ...optionForm, name: e.target.value })}
                     className="input-field w-full"
-                    placeholder="1-24 ساعة"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">مدة الاشتراك</label>
+                  <input
+                    type="text"
+                    placeholder="مثال: شهر واحد"
+                    value={optionForm.duration}
+                    onChange={(e) => setOptionForm({ ...optionForm, duration: e.target.value })}
+                    className="input-field w-full"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">السعر ($) *</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={optionForm.price}
+                    onChange={(e) => setOptionForm({ ...optionForm, price: parseFloat(e.target.value) || 0 })}
+                    className="input-field w-full"
                   />
                 </div>
               </div>
+
+              {/* Delivery Type */}
               <div>
-                <label className="block text-sm font-medium mb-2">الوصف</label>
-                <textarea
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">نوع التسليم</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setOptionForm({ ...optionForm, delivery_type: 'manual', type: optionForm.type === 'none' ? 'email_password' : optionForm.type })}
+                    className={`flex-1 py-2.5 px-3 rounded-lg border text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                      optionForm.delivery_type === 'manual'
+                        ? 'bg-warning/10 border-warning text-warning'
+                        : 'border-border hover:bg-muted'
+                    }`}
+                  >
+                    <Clock className="w-4 h-4" />
+                    يدوي (خدمات)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOptionForm({ ...optionForm, delivery_type: 'auto' })}
+                    className={`flex-1 py-2.5 px-3 rounded-lg border text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                      optionForm.delivery_type === 'auto'
+                        ? 'bg-success/10 border-success text-success'
+                        : 'border-border hover:bg-muted'
+                    }`}
+                  >
+                    <Zap className="w-4 h-4" />
+                    تلقائي (اكونتات)
+                  </button>
+                </div>
+              </div>
+
+              {/* Manual: Show input type required from customer */}
+              {optionForm.delivery_type === 'manual' && (
+                <div className="grid grid-cols-2 gap-3 p-3 bg-warning/5 rounded-lg border border-warning/20">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">البيانات المطلوبة من العميل</label>
+                    <select
+                      value={optionForm.type}
+                      onChange={(e) => setOptionForm({ ...optionForm, type: e.target.value })}
+                      className="input-field w-full"
+                    >
+                      <option value="email_password">إيميل وباسورد</option>
+                      <option value="link">رابط فقط</option>
+                      <option value="text">نص</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">الوقت المتوقع للتنفيذ</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: 24 ساعة"
+                      value={optionForm.estimated_time}
+                      onChange={(e) => setOptionForm({ ...optionForm, estimated_time: e.target.value })}
+                      className="input-field w-full"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Auto: Show stock management */}
+              {optionForm.delivery_type === 'auto' && (
+                <div className="p-3 bg-success/5 rounded-lg border border-success/20 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-success font-medium flex items-center gap-2">
+                        <Zap className="w-4 h-4" />
+                        استلام فوري من المخزون
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        المخزون الحالي: {editingOption ? getOptionStockCount(editingOption.id) : 0} عنصر
+                      </p>
+                    </div>
+                    {editingOption && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowOptionModal(false);
+                          openStockModal(currentProductId!, editingOption.id);
+                        }}
+                        className="btn-primary text-sm px-4 py-2 flex items-center gap-2"
+                      >
+                        <Database className="w-4 h-4" />
+                        إدارة المخزون
+                      </button>
+                    )}
+                  </div>
+                  {!editingOption && (
+                    <p className="text-xs text-muted-foreground">
+                      يمكنك إضافة المخزون بعد حفظ المنتج من خلال زر "إدارة المخزون"
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Status Toggle */}
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border">
+                <div>
+                  <p className="text-sm font-medium">حالة الخدمة</p>
+                  <p className="text-xs text-muted-foreground">
+                    {optionForm.is_active ? 'نشط - العملاء يرون أنك متاح' : 'غير نشط - العملاء يرون أنك غير متاح'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOptionForm({ ...optionForm, is_active: !optionForm.is_active })}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    optionForm.is_active ? 'bg-success' : 'bg-muted-foreground/30'
+                  }`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                    optionForm.is_active ? 'right-1' : 'left-1'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">الوصف (اختياري)</label>
+                <input
+                  type="text"
+                  placeholder="وصف مختصر للمنتج..."
                   value={optionForm.description}
                   onChange={(e) => setOptionForm({ ...optionForm, description: e.target.value })}
-                  className="input-field w-full h-20"
-                  placeholder="وصف المنتج..."
+                  className="input-field w-full"
                 />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={optionForm.is_active}
-                  onChange={(e) => setOptionForm({ ...optionForm, is_active: e.target.checked })}
-                  className="w-4 h-4 rounded border-border"
-                />
-                <label htmlFor="is_active" className="text-sm">نشط (متاح للشراء)</label>
               </div>
             </div>
-            <div className="flex gap-3 p-4 border-t border-border">
-              <button onClick={() => setShowOptionModal(false)} className="flex-1 py-2.5 border border-border rounded-lg hover:bg-muted transition-colors">
-                إلغاء
+            <div className="p-6 border-t border-border flex gap-3">
+              <button onClick={handleSaveOption} className="btn-primary flex-1 py-3 flex items-center justify-center gap-2">
+                <Save className="w-4 h-4" />
+                {editingOption ? 'حفظ التغييرات' : 'إضافة المنتج'}
               </button>
-              <button onClick={handleSaveOption} className="btn-primary flex-1 py-2.5">
-                حفظ
+              <button onClick={() => setShowOptionModal(false)} className="px-6 py-3 border border-border rounded-lg hover:bg-muted transition-colors">
+                إلغاء
               </button>
             </div>
           </div>

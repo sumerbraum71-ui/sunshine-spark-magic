@@ -671,6 +671,15 @@ const ProductCard = ({
   );
 };
 
+interface UserPermissions {
+  can_manage_orders: boolean;
+  can_manage_products: boolean;
+  can_manage_tokens: boolean;
+  can_manage_refunds: boolean;
+  can_manage_users: boolean;
+  can_manage_coupons: boolean;
+}
+
 const Admin = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'tokens' | 'orders' | 'refunds' | 'users' | 'coupons'>('orders');
   const [products, setProducts] = useState<Product[]>([]);
@@ -681,6 +690,8 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userPermissions, setUserPermissions] = useState<UserPermissions | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -790,13 +801,24 @@ const Admin = () => {
       return;
     }
 
-    // Check if user is admin OR has any permissions
-    const { data: isAdmin } = await supabase.rpc('has_role', {
+    // Check if user is admin
+    const { data: adminCheck } = await supabase.rpc('has_role', {
       _user_id: session.user.id,
       _role: 'admin',
     });
 
-    if (isAdmin) {
+    if (adminCheck) {
+      setIsAdmin(true);
+      // Admin has all permissions
+      setUserPermissions({
+        can_manage_orders: true,
+        can_manage_products: true,
+        can_manage_tokens: true,
+        can_manage_refunds: true,
+        can_manage_users: true,
+        can_manage_coupons: true,
+      });
+      setActiveTab('orders');
       setIsLoading(false);
       return;
     }
@@ -822,6 +844,24 @@ const Admin = () => {
       navigate('/admin/auth');
       return;
     }
+
+    // Store permissions
+    setUserPermissions({
+      can_manage_orders: permissions.can_manage_orders || false,
+      can_manage_products: permissions.can_manage_products || false,
+      can_manage_tokens: permissions.can_manage_tokens || false,
+      can_manage_refunds: permissions.can_manage_refunds || false,
+      can_manage_users: permissions.can_manage_users || false,
+      can_manage_coupons: permissions.can_manage_coupons || false,
+    });
+
+    // Set default tab based on permissions
+    if (permissions.can_manage_orders) setActiveTab('orders');
+    else if (permissions.can_manage_products) setActiveTab('products');
+    else if (permissions.can_manage_tokens) setActiveTab('tokens');
+    else if (permissions.can_manage_refunds) setActiveTab('refunds');
+    else if (permissions.can_manage_users) setActiveTab('users');
+    else if (permissions.can_manage_coupons) setActiveTab('coupons');
 
     setIsLoading(false);
   };
@@ -1363,13 +1403,13 @@ const Admin = () => {
         {/* Tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           {[
-            { id: 'orders', label: 'الطلبات', icon: ShoppingBag, count: orders.length },
-            { id: 'products', label: 'الأقسام', icon: Package, count: products.length },
-            { id: 'tokens', label: 'التوكنات', icon: Key, count: tokens.length },
-            { id: 'refunds', label: 'الاستردادات', icon: RotateCcw, count: refundRequests.filter(r => r.status === 'pending').length },
-            { id: 'coupons', label: 'الكوبونات', icon: Ticket, count: null },
-            { id: 'users', label: 'المستخدمين', icon: Shield, count: null },
-          ].map((tab) => {
+            { id: 'orders', label: 'الطلبات', icon: ShoppingBag, count: orders.length, permission: 'can_manage_orders' },
+            { id: 'products', label: 'الأقسام', icon: Package, count: products.length, permission: 'can_manage_products' },
+            { id: 'tokens', label: 'التوكنات', icon: Key, count: tokens.length, permission: 'can_manage_tokens' },
+            { id: 'refunds', label: 'الاستردادات', icon: RotateCcw, count: refundRequests.filter(r => r.status === 'pending').length, permission: 'can_manage_refunds' },
+            { id: 'coupons', label: 'الكوبونات', icon: Ticket, count: null, permission: 'can_manage_coupons' },
+            { id: 'users', label: 'المستخدمين', icon: Shield, count: null, permission: 'can_manage_users' },
+          ].filter(tab => isAdmin || (userPermissions && userPermissions[tab.permission as keyof UserPermissions])).map((tab) => {
             const Icon = tab.icon;
             return (
               <button

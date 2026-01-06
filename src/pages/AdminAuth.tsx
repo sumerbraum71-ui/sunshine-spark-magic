@@ -78,16 +78,37 @@ const AdminAuth = () => {
         if (error) throw error;
 
         if (data.user) {
-          const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', {
+          // Check if user is admin OR has any permissions
+          const { data: isAdmin } = await supabase.rpc('has_role', {
             _user_id: data.user.id,
             _role: 'admin',
           });
 
-          if (roleError || !isAdmin) {
+          // If not admin, check for any permissions
+          let hasAnyPermission = false;
+          if (!isAdmin) {
+            const { data: permissions } = await supabase
+              .from('user_permissions')
+              .select('*')
+              .eq('user_id', data.user.id)
+              .maybeSingle();
+
+            if (permissions) {
+              hasAnyPermission = 
+                permissions.can_manage_orders ||
+                permissions.can_manage_products ||
+                permissions.can_manage_tokens ||
+                permissions.can_manage_refunds ||
+                permissions.can_manage_users ||
+                permissions.can_manage_coupons;
+            }
+          }
+
+          if (!isAdmin && !hasAnyPermission) {
             await supabase.auth.signOut();
             toast({
               title: 'غير مصرح',
-              description: 'هذا الحساب ليس لديه صلاحيات الأدمن',
+              description: 'هذا الحساب ليس لديه صلاحيات للوصول للوحة التحكم',
               variant: 'destructive',
             });
             return;

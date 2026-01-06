@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import OrderChat from '@/components/OrderChat';
-
+import MathCaptcha from '@/components/MathCaptcha';
 interface Product {
   id: string;
   name: string;
@@ -85,6 +85,8 @@ const Index = () => {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_type: 'percentage' | 'fixed'; discount_value: number } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [showMathCaptcha, setShowMathCaptcha] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   const { toast } = useToast();
 
   const product = products.find(p => p.id === selectedProductId);
@@ -311,12 +313,44 @@ const Index = () => {
     return Math.min(appliedCoupon.discount_value, price);
   };
 
+  // Check if rate limiting captcha is needed
+  const checkRateLimiting = async (): Promise<boolean> => {
+    if (!tokenData || !selectedOption) return false;
+    
+    // Check orders in the last hour for this token and product
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    
+    const { data: recentOrders, error } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('token_id', tokenData.id)
+      .eq('option_id', selectedOption.id)
+      .gte('created_at', oneHourAgo);
+    
+    if (error) {
+      console.error('Error checking rate limiting:', error);
+      return false;
+    }
+    
+    // If 5 or more orders in the last hour, require captcha
+    return (recentOrders?.length || 0) >= 5;
+  };
+
   const handleOrderSubmit = async () => {
     if (!selectedOption || !tokenData || !product) return;
 
     if (selectedOption.type === 'link' && !verificationLink.trim()) return;
     if (selectedOption.type === 'email_password' && (!email.trim() || !password.trim())) return;
     if (selectedOption.type === 'text' && !textInput.trim()) return;
+
+    // Check if captcha is needed
+    if (!captchaVerified) {
+      const needsCaptcha = await checkRateLimiting();
+      if (needsCaptcha) {
+        setShowMathCaptcha(true);
+        return;
+      }
+    }
 
     const isAutoDelivery = selectedOption.type === 'none' || !selectedOption.type;
     const basePrice = isAutoDelivery ? Number(selectedOption.price) * quantity : Number(selectedOption.price);
@@ -518,6 +552,18 @@ const Index = () => {
     setCurrentOrderId(null);
     setOrderStatus('pending');
     setResponseMessage(null);
+    setCaptchaVerified(false);
+  };
+
+  const handleCaptchaVerified = () => {
+    setShowMathCaptcha(false);
+    setCaptchaVerified(true);
+    // Proceed with order after captcha
+    handleOrderSubmit();
+  };
+
+  const handleCaptchaCancel = () => {
+    setShowMathCaptcha(false);
   };
 
   // Subscribe to order updates in real-time
@@ -1246,6 +1292,14 @@ const Index = () => {
           </div>
         </div>
       </main>
+
+      {/* Math Captcha Modal */}
+      {showMathCaptcha && (
+        <MathCaptcha
+          onVerified={handleCaptchaVerified}
+          onCancel={handleCaptchaCancel}
+        />
+      )}
     </div>
   );
 };

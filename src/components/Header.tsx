@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RotateCcw, HelpCircle, Users, Coins, Settings, Menu, X } from 'lucide-react';
+import { RotateCcw, HelpCircle, Coins, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Header = () => {
@@ -12,11 +12,11 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex-shrink-0">
             <h1 className="text-xl md:text-3xl font-bold">
-              <span className="text-primary">API</span>{' '}
-              <span className="text-foreground">Hub</span>
+              <span className="text-primary">BOOM</span>
+              <span className="text-foreground">PAY</span>
             </h1>
             <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
-              إدارة طلبات API وعرض سجل المعاملات
+              منصتك الموثوقة للخدمات الرقمية
             </p>
           </Link>
 
@@ -38,17 +38,9 @@ const Header = () => {
               <HelpCircle className="w-4 h-4" />
               الأسئلة
             </Link>
-            <button className="nav-btn bg-accent text-accent-foreground hover:opacity-90 flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Reseller HUB
-            </button>
             <button className="nav-btn bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-2">
               <Coins className="w-4 h-4" />
               شراء رصيد
-            </button>
-            <button className="nav-btn bg-success text-success-foreground hover:opacity-90 flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              الخدمات
             </button>
           </div>
         </div>
@@ -72,17 +64,9 @@ const Header = () => {
               <HelpCircle className="w-4 h-4" />
               الأسئلة
             </Link>
-            <button className="w-full nav-btn bg-accent text-accent-foreground hover:opacity-90 flex items-center gap-2 justify-center py-3">
-              <Users className="w-4 h-4" />
-              Reseller HUB
-            </button>
             <button className="w-full nav-btn bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-2 justify-center py-3">
               <Coins className="w-4 h-4" />
               شراء رصيد
-            </button>
-            <button className="w-full nav-btn bg-success text-success-foreground hover:opacity-90 flex items-center gap-2 justify-center py-3">
-              <Settings className="w-4 h-4" />
-              الخدمات
             </button>
           </div>
         )}

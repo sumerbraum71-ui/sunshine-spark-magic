@@ -1,23 +1,34 @@
-import { Newspaper, HelpCircle, Users, Coins, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { Newspaper, HelpCircle, Users, Coins, Settings, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Header = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <header className="bg-card border-b border-border">
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-3 md:py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/">
-            <h1 className="text-2xl md:text-3xl font-bold">
+          <Link to="/" className="flex-shrink-0">
+            <h1 className="text-xl md:text-3xl font-bold">
               <span className="text-primary">API</span>{' '}
-              <span className="text-foreground">Hub Dashboard</span>
+              <span className="text-foreground">Hub</span>
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
               إدارة طلبات API وعرض سجل المعاملات
             </p>
           </Link>
 
-          {/* Navigation Buttons */}
+          {/* Mobile Menu Button */}
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+          >
+            {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2 flex-wrap justify-end">
             <button className="nav-btn bg-secondary text-secondary-foreground hover:bg-muted flex items-center gap-2">
               <Newspaper className="w-4 h-4" />
@@ -41,6 +52,36 @@ const Header = () => {
             </button>
           </div>
         </div>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden mt-3 pt-3 border-t border-border space-y-2">
+            <button className="w-full nav-btn bg-secondary text-secondary-foreground hover:bg-muted flex items-center gap-2 justify-center py-3">
+              <Newspaper className="w-4 h-4" />
+              الأخبار
+            </button>
+            <Link 
+              to="/faq" 
+              onClick={() => setIsMenuOpen(false)}
+              className="w-full nav-btn bg-secondary text-secondary-foreground hover:bg-muted flex items-center gap-2 justify-center py-3"
+            >
+              <HelpCircle className="w-4 h-4" />
+              الأسئلة
+            </Link>
+            <button className="w-full nav-btn bg-accent text-accent-foreground hover:opacity-90 flex items-center gap-2 justify-center py-3">
+              <Users className="w-4 h-4" />
+              Reseller HUB
+            </button>
+            <button className="w-full nav-btn bg-primary text-primary-foreground hover:opacity-90 flex items-center gap-2 justify-center py-3">
+              <Coins className="w-4 h-4" />
+              شراء رصيد
+            </button>
+            <button className="w-full nav-btn bg-success text-success-foreground hover:opacity-90 flex items-center gap-2 justify-center py-3">
+              <Settings className="w-4 h-4" />
+              الخدمات
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

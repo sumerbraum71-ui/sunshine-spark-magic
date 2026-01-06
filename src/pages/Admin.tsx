@@ -688,6 +688,9 @@ const Admin = () => {
   
   // Refund filter state
   const [refundStatusFilter, setRefundStatusFilter] = useState<string>('all');
+  
+  // Token search state
+  const [tokenSearch, setTokenSearch] = useState<string>('');
 
   // Order notification callback
   const handleNewOrderNotification = useCallback(async () => {
@@ -1471,7 +1474,18 @@ const Admin = () => {
         {/* Tokens Tab */}
         {activeTab === 'tokens' && (
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex flex-col sm:flex-row gap-3 justify-between">
+              {/* Search Box */}
+              <div className="relative flex-1 max-w-md">
+                <input
+                  type="text"
+                  placeholder="بحث بالتوكن..."
+                  value={tokenSearch}
+                  onChange={(e) => setTokenSearch(e.target.value)}
+                  className="input-field w-full pr-10"
+                />
+                <Key className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              </div>
               <button
                 onClick={() => openTokenModal()}
                 className="btn-primary px-4 py-2 flex items-center gap-2"
@@ -1481,54 +1495,62 @@ const Admin = () => {
               </button>
             </div>
 
-            {tokens.length === 0 ? (
-              <div className="text-center py-12 bg-card rounded-xl border border-border">
-                <Key className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-muted-foreground">لا توجد توكنات</p>
-              </div>
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {tokens.map(token => (
-                  <div key={token.id} className={`bg-card rounded-xl border p-4 ${token.is_blocked ? 'border-destructive/50 bg-destructive/5' : 'border-border'}`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Key className={`w-4 h-4 ${token.is_blocked ? 'text-destructive' : 'text-primary'}`} />
-                        <span className="font-mono text-sm truncate max-w-[150px]">{token.token}</span>
-                        {token.is_blocked && (
-                          <span className="text-xs bg-destructive/20 text-destructive px-2 py-0.5 rounded-md">محظور</span>
-                        )}
+            {(() => {
+              const filteredTokens = tokens.filter(t => 
+                t.token.toLowerCase().includes(tokenSearch.toLowerCase())
+              );
+              
+              return filteredTokens.length === 0 ? (
+                <div className="text-center py-12 bg-card rounded-xl border border-border">
+                  <Key className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-muted-foreground">
+                    {tokenSearch ? 'لا توجد نتائج للبحث' : 'لا توجد توكنات'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredTokens.map(token => (
+                    <div key={token.id} className={`bg-card rounded-xl border p-4 ${token.is_blocked ? 'border-destructive/50 bg-destructive/5' : 'border-border'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Key className={`w-4 h-4 ${token.is_blocked ? 'text-destructive' : 'text-primary'}`} />
+                          <span className="font-mono text-sm truncate max-w-[150px]">{token.token}</span>
+                          {token.is_blocked && (
+                            <span className="text-xs bg-destructive/20 text-destructive px-2 py-0.5 rounded-md">محظور</span>
+                          )}
+                        </div>
+                        <span className={`text-lg font-bold ${token.is_blocked ? 'text-muted-foreground' : 'text-primary'}`}>${token.balance}</span>
                       </div>
-                      <span className={`text-lg font-bold ${token.is_blocked ? 'text-muted-foreground' : 'text-primary'}`}>${token.balance}</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openTokenModal(token)}
+                          className="flex-1 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors text-sm"
+                        >
+                          تعديل
+                        </button>
+                        <button
+                          onClick={() => handleToggleBlockToken(token)}
+                          className={`px-3 py-2 border rounded-lg transition-colors ${
+                            token.is_blocked 
+                              ? 'border-success/30 text-success hover:bg-success/10' 
+                              : 'border-warning/30 text-warning hover:bg-warning/10'
+                          }`}
+                          title={token.is_blocked ? 'فك الحظر' : 'حظر التوكن'}
+                        >
+                          <Ban className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteToken(token.id)}
+                          className="px-3 py-2 border border-destructive/30 text-destructive rounded-lg hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => openTokenModal(token)}
-                        className="flex-1 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors text-sm"
-                      >
-                        تعديل
-                      </button>
-                      <button
-                        onClick={() => handleToggleBlockToken(token)}
-                        className={`px-3 py-2 border rounded-lg transition-colors ${
-                          token.is_blocked 
-                            ? 'border-success/30 text-success hover:bg-success/10' 
-                            : 'border-warning/30 text-warning hover:bg-warning/10'
-                        }`}
-                        title={token.is_blocked ? 'فك الحظر' : 'حظر التوكن'}
-                      >
-                        <Ban className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteToken(token.id)}
-                        className="px-3 py-2 border border-destructive/30 text-destructive rounded-lg hover:bg-destructive/10 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
 

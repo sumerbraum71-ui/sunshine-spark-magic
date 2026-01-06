@@ -34,15 +34,21 @@ const Refund = () => {
 
     setIsLoading(true);
 
-    // Verify token exists
+    // Verify token exists and check if blocked
     const { data: tokenData } = await supabase
       .from('tokens')
-      .select('id')
+      .select('id, is_blocked')
       .eq('token', tokenValue.trim())
       .maybeSingle();
 
     if (!tokenData) {
       setError('التوكن غير صالح');
+      setIsLoading(false);
+      return;
+    }
+
+    if (tokenData.is_blocked) {
+      setError('هذا التوكن محظور ولا يمكن استخدامه لطلب استرداد');
       setIsLoading(false);
       return;
     }

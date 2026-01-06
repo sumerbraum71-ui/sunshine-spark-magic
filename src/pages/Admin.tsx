@@ -1354,7 +1354,9 @@ const Admin = () => {
                           <div className="flex items-center gap-2">
                             <ShoppingBag className="w-4 h-4 text-muted-foreground" />
                             <span className="text-muted-foreground">رقم الطلب:</span>
-                            <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs">{refund.order_id.slice(0, 8)}...</span>
+                            <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">
+                              #{orderInfo?.order_number || '---'}
+                            </span>
                           </div>
                           {orderInfo && (
                             <div className="flex items-center gap-2">

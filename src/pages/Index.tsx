@@ -752,12 +752,18 @@ const Index = () => {
                     type="text"
                     value={verificationLink}
                     onChange={(e) => setVerificationLink(e.target.value)}
-                    className="input-field w-full"
+                    className="input-field w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="ادخل الرابط"
+                    disabled={!!activeOrder}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     الوقت المتوقع: {selectedOption.estimated_time}
                   </p>
+                  {activeOrder && (
+                    <p className="text-xs text-yellow-600 mt-1">
+                      لديك طلب قيد التنفيذ - لا يمكنك تغيير البيانات
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -769,8 +775,9 @@ const Index = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="input-field w-full"
+                      className="input-field w-full disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="ادخل إيميل الحساب"
+                      disabled={!!activeOrder}
                     />
                   </div>
                   <div>
@@ -779,13 +786,19 @@ const Index = () => {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="input-field w-full"
+                      className="input-field w-full disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="ادخل باسورد الحساب"
+                      disabled={!!activeOrder}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     الوقت المتوقع: {selectedOption.estimated_time}
                   </p>
+                  {activeOrder && (
+                    <p className="text-xs text-yellow-600">
+                      لديك طلب قيد التنفيذ - لا يمكنك تغيير البيانات
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -795,12 +808,18 @@ const Index = () => {
                   <textarea
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
-                    className="input-field w-full h-24"
+                    className="input-field w-full h-24 disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="ادخل النص المطلوب"
+                    disabled={!!activeOrder}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     الوقت المتوقع: {selectedOption.estimated_time}
                   </p>
+                  {activeOrder && (
+                    <p className="text-xs text-yellow-600 mt-1">
+                      لديك طلب قيد التنفيذ - لا يمكنك تغيير البيانات
+                    </p>
+                  )}
                 </div>
               )}
 

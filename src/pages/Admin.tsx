@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Package, Key, ShoppingBag, LogOut, Plus, Trash2, Edit2, Save, X,
   ChevronDown, ChevronUp, Settings, Copy, Eye, EyeOff, Clock, CheckCircle2,
-  XCircle, Loader2, LayoutGrid, Zap, Database, Bell, BellOff, TrendingUp, DollarSign, Users, MessageCircle
+  XCircle, Loader2, LayoutGrid, Zap, Database, Bell, BellOff, TrendingUp, DollarSign, Users, MessageCircle, Link
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useOrderNotification } from '@/hooks/useOrderNotification';
@@ -75,12 +75,14 @@ const OrderCard = ({
   order,
   onUpdateStatus,
   onDelete,
+  onRequestNewLink,
   products,
   productOptions
 }: {
   order: Order;
   onUpdateStatus: (id: string, status: string, message?: string) => void;
   onDelete: (id: string) => void;
+  onRequestNewLink: (orderId: string) => void;
   products: Product[];
   productOptions: ProductOption[];
 }) => {
@@ -143,9 +145,27 @@ const OrderCard = ({
           <span className="text-xl font-bold text-primary">${order.amount}</span>
           
           {order.verification_link && (
-            <span className="text-sm text-primary">
-              رابط التحقق: {order.verification_link}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">الرابط:</span>
+              <span className="text-sm text-primary bg-primary/10 px-2 py-1 rounded">{order.verification_link}</span>
+              <button 
+                onClick={() => copyToClipboard(order.verification_link!, 'الرابط')} 
+                className="p-1 hover:bg-muted rounded"
+                title="نسخ الرابط"
+              >
+                <Copy className="w-3 h-3" />
+              </button>
+              {order.status === 'in_progress' && (
+                <button 
+                  onClick={() => onRequestNewLink(order.id)} 
+                  className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 bg-primary/10 px-2 py-1 rounded"
+                  title="طلب رابط جديد من العميل"
+                >
+                  <Link className="w-3 h-3" />
+                  طلب رابط جديد
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -843,6 +863,21 @@ const Admin = () => {
     }
   };
 
+  const handleRequestNewLink = async (orderId: string) => {
+    // Send a message to the customer requesting a new link
+    const { error } = await supabase.from('order_messages').insert({
+      order_id: orderId,
+      sender_type: 'admin',
+      message: '⚠️ الرابط المرسل غير صحيح أو منتهي الصلاحية. يرجى إرسال رابط جديد في الشات.'
+    });
+
+    if (error) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'تم', description: 'تم إرسال طلب رابط جديد للعميل' });
+    }
+  };
+
   // Stock handlers
   const openStockModal = (productId: string, optionId?: string) => {
     setCurrentStockProductId(productId);
@@ -1057,6 +1092,7 @@ const Admin = () => {
                     order={order}
                     onUpdateStatus={handleUpdateOrderStatus}
                     onDelete={handleDeleteOrder}
+                    onRequestNewLink={handleRequestNewLink}
                     products={products}
                     productOptions={productOptions}
                   />

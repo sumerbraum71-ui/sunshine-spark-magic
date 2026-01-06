@@ -199,6 +199,39 @@ export type Database = {
         }
         Relationships: []
       }
+      refund_requests: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          id: string
+          order_id: string
+          processed_at: string | null
+          reason: string | null
+          status: string
+          token_value: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          processed_at?: string | null
+          reason?: string | null
+          status?: string
+          token_value: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          processed_at?: string | null
+          reason?: string | null
+          status?: string
+          token_value?: string
+        }
+        Relationships: []
+      }
       stock_items: {
         Row: {
           content: string

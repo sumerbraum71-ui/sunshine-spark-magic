@@ -295,18 +295,21 @@ export type Database = {
           balance: number
           created_at: string
           id: string
+          is_blocked: boolean
           token: string
         }
         Insert: {
           balance?: number
           created_at?: string
           id?: string
+          is_blocked?: boolean
           token: string
         }
         Update: {
           balance?: number
           created_at?: string
           id?: string
+          is_blocked?: boolean
           token?: string
         }
         Relationships: []

@@ -816,13 +816,14 @@ const Index = () => {
                   disabled={
                     isLoading ||
                     remainingBalance < 0 ||
+                    !!activeOrder ||
                     (selectedOption.type === 'link' && !verificationLink.trim()) ||
                     (selectedOption.type === 'email_password' && (!email.trim() || !password.trim())) ||
                     (selectedOption.type === 'text' && !textInput.trim())
                   }
                   className="btn-primary flex-1 py-3 disabled:opacity-50"
                 >
-                  {isLoading ? 'جاري المعالجة...' : 'إرسال الطلب'}
+                  {isLoading ? 'جاري المعالجة...' : activeOrder ? 'لديك طلب نشط' : 'إرسال الطلب'}
                 </button>
               </div>
             </div>

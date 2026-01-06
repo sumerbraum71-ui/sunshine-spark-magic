@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Package, Key, ShoppingBag, LogOut, Plus, Trash2, Edit2, Save, X,
   ChevronDown, ChevronUp, Settings, Copy, Eye, EyeOff, Clock, CheckCircle2,
-  XCircle, Loader2, LayoutGrid, Zap, Database, Bell, BellOff, TrendingUp, DollarSign, Users, MessageCircle, Link, RotateCcw
+  XCircle, Loader2, LayoutGrid, Zap, Database, Bell, BellOff, TrendingUp, DollarSign, Users, MessageCircle, Link, RotateCcw, Ban
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useOrderNotification } from '@/hooks/useOrderNotification';
@@ -46,6 +46,7 @@ interface Token {
   id: string;
   token: string;
   balance: number;
+  is_blocked: boolean;
 }
 
 interface Order {
@@ -684,6 +685,9 @@ const Admin = () => {
 
   // Order filter state
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
+  
+  // Refund filter state
+  const [refundStatusFilter, setRefundStatusFilter] = useState<string>('all');
 
   // Order notification callback
   const handleNewOrderNotification = useCallback(async () => {
@@ -1057,6 +1061,23 @@ const Admin = () => {
     }
   };
 
+  const handleToggleBlockToken = async (token: Token) => {
+    const { error } = await supabase
+      .from('tokens')
+      .update({ is_blocked: !token.is_blocked })
+      .eq('id', token.id);
+
+    if (error) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ 
+        title: 'تم', 
+        description: token.is_blocked ? 'تم فك حظر التوكن' : 'تم حظر التوكن' 
+      });
+      fetchData();
+    }
+  };
+
   // Order handlers
   const handleUpdateOrderStatus = async (id: string, status: string, message?: string) => {
     const { error } = await supabase
@@ -1218,6 +1239,11 @@ const Admin = () => {
   const filteredOrders = orderStatusFilter === 'all' 
     ? orders 
     : orders.filter(o => o.status === orderStatusFilter);
+
+  // Filter refunds
+  const filteredRefunds = refundStatusFilter === 'all' 
+    ? refundRequests 
+    : refundRequests.filter(r => r.status === refundStatusFilter);
 
   if (isLoading) {
     return (
@@ -1463,13 +1489,16 @@ const Admin = () => {
             ) : (
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {tokens.map(token => (
-                  <div key={token.id} className="bg-card rounded-xl border border-border p-4">
+                  <div key={token.id} className={`bg-card rounded-xl border p-4 ${token.is_blocked ? 'border-destructive/50 bg-destructive/5' : 'border-border'}`}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <Key className="w-4 h-4 text-primary" />
+                        <Key className={`w-4 h-4 ${token.is_blocked ? 'text-destructive' : 'text-primary'}`} />
                         <span className="font-mono text-sm truncate max-w-[150px]">{token.token}</span>
+                        {token.is_blocked && (
+                          <span className="text-xs bg-destructive/20 text-destructive px-2 py-0.5 rounded-md">محظور</span>
+                        )}
                       </div>
-                      <span className="text-lg font-bold text-primary">${token.balance}</span>
+                      <span className={`text-lg font-bold ${token.is_blocked ? 'text-muted-foreground' : 'text-primary'}`}>${token.balance}</span>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -1477,6 +1506,17 @@ const Admin = () => {
                         className="flex-1 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors text-sm"
                       >
                         تعديل
+                      </button>
+                      <button
+                        onClick={() => handleToggleBlockToken(token)}
+                        className={`px-3 py-2 border rounded-lg transition-colors ${
+                          token.is_blocked 
+                            ? 'border-success/30 text-success hover:bg-success/10' 
+                            : 'border-warning/30 text-warning hover:bg-warning/10'
+                        }`}
+                        title={token.is_blocked ? 'فك الحظر' : 'حظر التوكن'}
+                      >
+                        <Ban className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteToken(token.id)}
@@ -1495,19 +1535,57 @@ const Admin = () => {
         {/* Refunds Tab */}
         {activeTab === 'refunds' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <RotateCcw className="w-5 h-5 text-primary" />
-              طلبات الاسترداد
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <RotateCcw className="w-5 h-5 text-primary" />
+                طلبات الاسترداد
+              </h2>
+            </div>
 
-            {refundRequests.length === 0 ? (
+            {/* Refund Status Filter */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setRefundStatusFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  refundStatusFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                الكل ({refundRequests.length})
+              </button>
+              <button
+                onClick={() => setRefundStatusFilter('pending')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  refundStatusFilter === 'pending' ? 'bg-warning text-warning-foreground' : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                قيد المراجعة ({refundRequests.filter(r => r.status === 'pending').length})
+              </button>
+              <button
+                onClick={() => setRefundStatusFilter('approved')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  refundStatusFilter === 'approved' ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                تم الاسترداد ({refundRequests.filter(r => r.status === 'approved').length})
+              </button>
+              <button
+                onClick={() => setRefundStatusFilter('rejected')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  refundStatusFilter === 'rejected' ? 'bg-destructive text-destructive-foreground' : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                مرفوض ({refundRequests.filter(r => r.status === 'rejected').length})
+              </button>
+            </div>
+
+            {filteredRefunds.length === 0 ? (
               <div className="text-center py-12 bg-card rounded-xl border border-border">
                 <RotateCcw className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
                 <p className="text-muted-foreground">لا توجد طلبات استرداد</p>
               </div>
             ) : (
               <div className="grid gap-4">
-                {refundRequests.map(refund => {
+                {filteredRefunds.map(refund => {
                   const getOrderInfo = () => {
                     const order = orders.find(o => o.id === refund.order_id);
                     return order;

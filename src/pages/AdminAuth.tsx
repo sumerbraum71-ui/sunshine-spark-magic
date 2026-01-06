@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
@@ -10,31 +10,29 @@ const AdminAuth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const isHandlingAuth = useRef(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (session?.user) {
-          // Avoid calling Supabase queries directly inside the callback
-          setTimeout(() => {
-            checkAdminRole(session.user.id);
-          }, 0);
+    // Check existing session on mount
+    const checkExistingSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const hasAccess = await checkUserAccess(session.user.id);
+        if (hasAccess) {
+          navigate('/admin');
+          return;
         }
       }
-    );
+      setIsCheckingAuth(false);
+    };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        checkAdminRole(session.user.id);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    checkExistingSession();
   }, []);
 
-  const checkAdminRole = async (userId: string) => {
+  const checkUserAccess = async (userId: string): Promise<boolean> => {
     // Check if admin
     const { data: isAdmin } = await supabase.rpc('has_role', {
       _user_id: userId,
@@ -42,8 +40,7 @@ const AdminAuth = () => {
     });
 
     if (isAdmin) {
-      navigate('/admin');
-      return;
+      return true;
     }
 
     // Check for any permissions
@@ -62,14 +59,16 @@ const AdminAuth = () => {
         permissions.can_manage_users ||
         permissions.can_manage_coupons;
 
-      if (hasAnyPermission) {
-        navigate('/admin');
-      }
+      return hasAnyPermission;
     }
+
+    return false;
   };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isHandlingAuth.current) return;
+    isHandlingAuth.current = true;
     setIsLoading(true);
 
     try {
@@ -152,8 +151,17 @@ const AdminAuth = () => {
       });
     } finally {
       setIsLoading(false);
+      isHandlingAuth.current = false;
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

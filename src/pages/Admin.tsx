@@ -50,6 +50,7 @@ interface Token {
 
 interface Order {
   id: string;
+  order_number: number;
   token_id: string | null;
   product_id: string | null;
   option_id: string | null;
@@ -145,10 +146,15 @@ const OrderCard = ({
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Product Name */}
-        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <Package className="w-4 h-4 text-primary" />
-          <span>{getProductName()}</span>
+        {/* Order Number & Product Name */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Package className="w-4 h-4 text-primary" />
+            <span>{getProductName()}</span>
+          </div>
+          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-lg font-mono">
+            طلب #{order.order_number}
+          </span>
         </div>
 
         {/* Amount & Verification Link */}

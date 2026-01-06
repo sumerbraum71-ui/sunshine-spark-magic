@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 
 const Refund = () => {
   const [tokenValue, setTokenValue] = useState('');
-  const [orderId, setOrderId] = useState('');
+  const [orderNumber, setOrderNumber] = useState('');
   const [reason, setReason] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -17,8 +17,14 @@ const Refund = () => {
     e.preventDefault();
     setError('');
 
-    if (!tokenValue.trim() || !orderId.trim()) {
+    if (!tokenValue.trim() || !orderNumber.trim()) {
       setError('يرجى ملء جميع الحقول المطلوبة');
+      return;
+    }
+
+    const orderNum = parseInt(orderNumber.trim());
+    if (isNaN(orderNum)) {
+      setError('رقم الطلب يجب أن يكون رقماً');
       return;
     }
 
@@ -41,7 +47,7 @@ const Refund = () => {
     const { data: orderData } = await supabase
       .from('orders')
       .select('id, status, amount')
-      .eq('id', orderId.trim())
+      .eq('order_number', orderNum)
       .eq('token_id', tokenData.id)
       .maybeSingle();
 
@@ -61,7 +67,7 @@ const Refund = () => {
     const { data: existingRefund } = await supabase
       .from('refund_requests')
       .select('id')
-      .eq('order_id', orderId.trim())
+      .eq('order_id', orderData.id)
       .eq('status', 'pending')
       .maybeSingle();
 
@@ -76,7 +82,7 @@ const Refund = () => {
       .from('refund_requests')
       .insert({
         token_value: tokenValue.trim(),
-        order_id: orderId.trim(),
+        order_id: orderData.id,
         reason: reason.trim() || null
       });
 
@@ -93,7 +99,7 @@ const Refund = () => {
 
   const handleReset = () => {
     setTokenValue('');
-    setOrderId('');
+    setOrderNumber('');
     setReason('');
     setSubmitted(false);
     setError('');
@@ -143,11 +149,11 @@ const Refund = () => {
                 <div>
                   <label className="block text-sm font-medium mb-2">رقم الطلب *</label>
                   <input
-                    type="text"
-                    value={orderId}
-                    onChange={(e) => setOrderId(e.target.value)}
+                    type="number"
+                    value={orderNumber}
+                    onChange={(e) => setOrderNumber(e.target.value)}
                     className="input-field w-full"
-                    placeholder="أدخل رقم الطلب (UUID)"
+                    placeholder="أدخل رقم الطلب"
                     required
                   />
                 </div>

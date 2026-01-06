@@ -35,13 +35,36 @@ const AdminAuth = () => {
   }, []);
 
   const checkAdminRole = async (userId: string) => {
-    const { data, error } = await supabase.rpc('has_role', {
+    // Check if admin
+    const { data: isAdmin } = await supabase.rpc('has_role', {
       _user_id: userId,
       _role: 'admin',
     });
 
-    if (!error && data) {
+    if (isAdmin) {
       navigate('/admin');
+      return;
+    }
+
+    // Check for any permissions
+    const { data: permissions } = await supabase
+      .from('user_permissions')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (permissions) {
+      const hasAnyPermission = 
+        permissions.can_manage_orders ||
+        permissions.can_manage_products ||
+        permissions.can_manage_tokens ||
+        permissions.can_manage_refunds ||
+        permissions.can_manage_users ||
+        permissions.can_manage_coupons;
+
+      if (hasAnyPermission) {
+        navigate('/admin');
+      }
     }
   };
 

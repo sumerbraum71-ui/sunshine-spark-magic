@@ -56,7 +56,7 @@ export type Database = {
           email: string | null
           id: string
           option_id: string | null
-          order_number: string
+          order_number: string | null
           password: string | null
           product_id: string | null
           response_message: string | null
@@ -70,7 +70,7 @@ export type Database = {
           email?: string | null
           id?: string
           option_id?: string | null
-          order_number: string
+          order_number?: string | null
           password?: string | null
           product_id?: string | null
           response_message?: string | null
@@ -84,7 +84,7 @@ export type Database = {
           email?: string | null
           id?: string
           option_id?: string | null
-          order_number?: string
+          order_number?: string | null
           password?: string | null
           product_id?: string | null
           response_message?: string | null

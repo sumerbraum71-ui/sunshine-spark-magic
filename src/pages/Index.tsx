@@ -281,7 +281,7 @@ const Index = () => {
         amount: totalPrice,
         status: 'completed',
         response_message: combinedContent
-      }).select('id').single();
+      } as any).select('id, order_number').single();
 
       if (orderError || !orderData) {
         toast({
@@ -335,7 +335,7 @@ const Index = () => {
       verification_link: selectedOption.type === 'link' ? verificationLink : (selectedOption.type === 'text' ? textInput : null),
       amount: selectedOption.price,
       status: 'pending'
-    }).select('id, order_number').single();
+    } as any).select('id, order_number').single();
 
     if (orderError || !orderData) {
       toast({

@@ -136,10 +136,17 @@ const OrderCard = ({
           <span>{getProductName()}</span>
         </div>
 
-        {/* Amount & Info */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Amount & Verification Link */}
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xl font-bold text-primary">${order.amount}</span>
+          
+          {order.verification_link && (
+            <span className="text-sm text-primary">رابط التحقق م</span>
+          )}
+        </div>
 
+        {/* Email & Password */}
+        <div className="flex flex-wrap items-center gap-3">
           {order.email && (
             <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-lg">
               <span className="text-sm">{order.email}</span>
@@ -160,30 +167,7 @@ const OrderCard = ({
               </button>
             </div>
           )}
-
         </div>
-
-        {/* Verification Link - Full Display */}
-        {order.verification_link && (
-          <div className="flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-lg">
-            <span className="text-sm text-muted-foreground shrink-0">رابط التحقق:</span>
-            <a
-              href={order.verification_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-primary hover:underline break-all flex-1"
-              dir="ltr"
-            >
-              {order.verification_link}
-            </a>
-            <button 
-              onClick={() => copyToClipboard(order.verification_link!, 'رابط التحقق')} 
-              className="p-1.5 hover:bg-background rounded shrink-0"
-            >
-              <Copy className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3">

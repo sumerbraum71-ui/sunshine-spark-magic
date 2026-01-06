@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, MessageCircle } from 'lucide-react';
+import { Send, MessageCircle, Check, CheckCheck } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -8,6 +8,7 @@ interface Message {
   sender_type: 'customer' | 'admin';
   message: string;
   created_at: string;
+  is_read: boolean;
 }
 
 interface OrderChatProps {
@@ -43,16 +44,31 @@ const OrderChat = ({ orderId, senderType }: OrderChatProps) => {
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isFirstLoad = useRef(true);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Mark messages as read when viewing
+  const markMessagesAsRead = async () => {
+    // Mark messages from the OTHER party as read
+    const unreadMessages = messages.filter(
+      msg => msg.sender_type !== senderType && !msg.is_read
+    );
+    
+    if (unreadMessages.length > 0) {
+      const ids = unreadMessages.map(msg => msg.id);
+      await supabase
+        .from('order_messages')
+        .update({ is_read: true })
+        .in('id', ids);
+    }
+  };
+
   useEffect(() => {
     fetchMessages();
 
-    // Subscribe to new messages
+    // Subscribe to new messages and updates
     const channel = supabase
       .channel(`order-messages-${orderId}`)
       .on(
@@ -73,12 +89,34 @@ const OrderChat = ({ orderId, senderType }: OrderChatProps) => {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'order_messages',
+          filter: `order_id=eq.${orderId}`
+        },
+        (payload) => {
+          const updatedMsg = payload.new as Message;
+          setMessages(prev => 
+            prev.map(msg => msg.id === updatedMsg.id ? updatedMsg : msg)
+          );
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [orderId, senderType]);
+
+  // Mark messages as read when messages change or component mounts
+  useEffect(() => {
+    if (messages.length > 0) {
+      markMessagesAsRead();
+    }
+  }, [messages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -147,11 +185,27 @@ const OrderChat = ({ orderId, senderType }: OrderChatProps) => {
                 }`}
               >
                 <p className="whitespace-pre-wrap break-words">{msg.message}</p>
-                <p className={`text-[10px] mt-1 ${
-                  msg.sender_type === senderType ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                <div className={`flex items-center gap-1 mt-1 ${
+                  msg.sender_type === senderType ? 'justify-start' : 'justify-end'
                 }`}>
-                  {new Date(msg.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
-                </p>
+                  <span className={`text-[10px] ${
+                    msg.sender_type === senderType ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                  }`}>
+                    {new Date(msg.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  {/* Show read status only for messages sent by current user */}
+                  {msg.sender_type === senderType && (
+                    msg.is_read ? (
+                      <CheckCheck className={`w-3 h-3 ${
+                        msg.sender_type === senderType ? 'text-primary-foreground/70' : 'text-blue-500'
+                      }`} />
+                    ) : (
+                      <Check className={`w-3 h-3 ${
+                        msg.sender_type === senderType ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                      }`} />
+                    )
+                  )}
+                </div>
               </div>
             </div>
           ))

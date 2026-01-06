@@ -359,6 +359,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permissions: {
+        Row: {
+          can_manage_coupons: boolean | null
+          can_manage_orders: boolean | null
+          can_manage_products: boolean | null
+          can_manage_refunds: boolean | null
+          can_manage_tokens: boolean | null
+          can_manage_users: boolean | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          can_manage_coupons?: boolean | null
+          can_manage_orders?: boolean | null
+          can_manage_products?: boolean | null
+          can_manage_refunds?: boolean | null
+          can_manage_tokens?: boolean | null
+          can_manage_users?: boolean | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          can_manage_coupons?: boolean | null
+          can_manage_orders?: boolean | null
+          can_manage_products?: boolean | null
+          can_manage_refunds?: boolean | null
+          can_manage_tokens?: boolean | null
+          can_manage_users?: boolean | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -385,6 +424,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_permission: {
+        Args: { _permission: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

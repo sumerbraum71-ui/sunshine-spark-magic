@@ -204,7 +204,7 @@ const Index = () => {
   const verifyToken = async (tokenValue: string) => {
     const { data } = await supabase
       .from('tokens')
-      .select('id, balance')
+      .select('id, balance, is_blocked')
       .eq('token', tokenValue)
       .maybeSingle();
 
@@ -222,6 +222,15 @@ const Index = () => {
       toast({
         title: 'خطأ',
         description: 'التوكن غير صالح',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (data.is_blocked) {
+      toast({
+        title: 'خطأ',
+        description: 'هذا التوكن محظور ولا يمكن استخدامه للشراء',
         variant: 'destructive',
       });
       return;

@@ -55,27 +55,19 @@ const AdminAuth = () => {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/admin`
+            emailRedirectTo: `${window.location.origin}/admin-auth`
           }
         });
 
         if (error) throw error;
 
         if (data.user) {
-          // Add admin role
-          const { error: roleError } = await supabase
-            .from('user_roles')
-            .insert({ user_id: data.user.id, role: 'admin' });
-
-          if (roleError) {
-            console.error('Role error:', roleError);
-          }
-
           toast({
             title: 'تم إنشاء الحساب',
-            description: 'تم إنشاء حساب الأدمن بنجاح',
+            description: 'تم إنشاء حسابك بنجاح. يرجى الانتظار حتى يتم منحك الصلاحيات من قبل الأدمن.',
           });
-          navigate('/admin');
+          // Sign out the user since they don't have admin access yet
+          await supabase.auth.signOut();
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({

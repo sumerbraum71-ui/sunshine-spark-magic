@@ -146,14 +146,20 @@ const Refund = () => {
     }
 
     // Get refund request
-    const { data: refundData } = await supabase
+    const { data: refundData, error: refundError } = await supabase
       .from('refund_requests')
       .select('status, reason, admin_note, created_at, processed_at')
       .eq('order_id', orderData.id)
       .maybeSingle();
 
+    if (refundError) {
+      setError('حدث خطأ أثناء البحث');
+      setIsLoading(false);
+      return;
+    }
+
     if (!refundData) {
-      setError('لا يوجد طلب استرداد لهذا الطلب');
+      setError('لا يوجد طلب استرداد لهذا الطلب. يمكنك تقديم طلب استرداد من تبويب "تقديم طلب"');
       setIsLoading(false);
       return;
     }

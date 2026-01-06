@@ -790,12 +790,34 @@ const Admin = () => {
       return;
     }
 
-    const { data: isAdmin, error } = await supabase.rpc('has_role', {
+    // Check if user is admin OR has any permissions
+    const { data: isAdmin } = await supabase.rpc('has_role', {
       _user_id: session.user.id,
       _role: 'admin',
     });
 
-    if (error || !isAdmin) {
+    if (isAdmin) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Check if user has any permissions
+    const { data: permissions } = await supabase
+      .from('user_permissions')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .single();
+
+    const hasAnyPermission = permissions && (
+      permissions.can_manage_orders ||
+      permissions.can_manage_products ||
+      permissions.can_manage_tokens ||
+      permissions.can_manage_refunds ||
+      permissions.can_manage_users ||
+      permissions.can_manage_coupons
+    );
+
+    if (!hasAnyPermission) {
       await supabase.auth.signOut();
       navigate('/admin/auth');
       return;

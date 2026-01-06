@@ -276,13 +276,14 @@ const RefundCard = ({
 }: {
   refund: RefundRequest;
   orderInfo: Order | undefined;
-  onApprove: (refund: RefundRequest, adminNote: string) => void;
+  onApprove: (refund: RefundRequest, adminNote: string, refundAmount: number) => void;
   onReject: (refundId: string, adminNote: string) => void;
 }) => {
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showApproveForm, setShowApproveForm] = useState(false);
   const [rejectNote, setRejectNote] = useState('');
   const [approveNote, setApproveNote] = useState('');
+  const [refundAmount, setRefundAmount] = useState(orderInfo?.amount?.toString() || '0');
 
   const handleReject = () => {
     onReject(refund.id, rejectNote);
@@ -291,7 +292,9 @@ const RefundCard = ({
   };
 
   const handleApprove = () => {
-    onApprove(refund, approveNote);
+    const amount = parseFloat(refundAmount) || 0;
+    if (amount <= 0) return;
+    onApprove(refund, approveNote, amount);
     setShowApproveForm(false);
     setApproveNote('');
   };
@@ -401,6 +404,35 @@ const RefundCard = ({
         {refund.status === 'pending' && showApproveForm && (
           <div className="pt-2 space-y-3 border-t border-border">
             <div>
+              <label className="text-sm font-medium mb-2 block">مبلغ الاسترداد</label>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <input
+                    type="number"
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    className="input-field w-full pr-8"
+                    min="0"
+                    max={orderInfo?.amount || 0}
+                    step="0.01"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRefundAmount(orderInfo?.amount?.toString() || '0')}
+                  className="px-3 py-2 text-xs bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+                >
+                  المبلغ كامل
+                </button>
+              </div>
+              {orderInfo && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  المبلغ الأصلي للطلب: ${orderInfo.amount}
+                </p>
+              )}
+            </div>
+            <div>
               <label className="text-sm font-medium mb-2 block">ملاحظة للعميل (اختياري)</label>
               <textarea
                 value={approveNote}
@@ -412,10 +444,11 @@ const RefundCard = ({
             <div className="flex gap-2">
               <button
                 onClick={handleApprove}
-                className="flex-1 py-2 bg-success text-success-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                disabled={!refundAmount || parseFloat(refundAmount) <= 0}
+                className="flex-1 py-2 bg-success text-success-foreground rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                تأكيد القبول
+                استرداد ${refundAmount || '0'}
               </button>
               <button
                 onClick={() => { setShowApproveForm(false); setApproveNote(''); }}
@@ -1126,8 +1159,8 @@ const Admin = () => {
   };
 
   // Refund handlers
-  const handleApproveRefund = async (refund: RefundRequest, adminNote: string) => {
-    // Get the order amount
+  const handleApproveRefund = async (refund: RefundRequest, adminNote: string, refundAmount: number) => {
+    // Get the order info
     const { data: orderData } = await supabase
       .from('orders')
       .select('amount, token_id')
@@ -1136,6 +1169,12 @@ const Admin = () => {
 
     if (!orderData) {
       toast({ title: 'خطأ', description: 'لم يتم العثور على الطلب', variant: 'destructive' });
+      return;
+    }
+
+    // Validate refund amount
+    if (refundAmount > Number(orderData.amount)) {
+      toast({ title: 'خطأ', description: 'مبلغ الاسترداد أكبر من مبلغ الطلب', variant: 'destructive' });
       return;
     }
 
@@ -1151,8 +1190,8 @@ const Admin = () => {
       return;
     }
 
-    // Refund the amount to the token
-    const newBalance = Number(tokenData.balance) + Number(orderData.amount);
+    // Refund the specified amount to the token
+    const newBalance = Number(tokenData.balance) + refundAmount;
     const { error: balanceError } = await supabase
       .from('tokens')
       .update({ balance: newBalance })
@@ -1178,7 +1217,7 @@ const Admin = () => {
       return;
     }
 
-    toast({ title: 'تم', description: `تم استرداد $${orderData.amount} للتوكن` });
+    toast({ title: 'تم', description: `تم استرداد $${refundAmount} للتوكن` });
     fetchData();
   };
 

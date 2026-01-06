@@ -358,7 +358,7 @@ const Index = () => {
       tokenValue: token
     }));
 
-    // Set active order
+    // Set active order - stay on same page, show order status in second card
     setActiveOrder({
       id: orderData.id,
       status: 'pending',
@@ -373,6 +373,7 @@ const Index = () => {
     setOrderStatus('pending');
     setResponseMessage(null);
     setIsLoading(false);
+    // Stay on same page - don't change step
   };
 
   const handleReset = () => {
@@ -515,82 +516,9 @@ const Index = () => {
     );
   }
 
-  // Show active order view if exists
-  if (activeOrder) {
-    const orderProduct = products.find(p => p.id === activeOrder.product_id);
-    const orderOption = productOptions.find(o => o.id === activeOrder.option_id);
-    
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-6 max-w-2xl">
-          <div className="card-simple p-6 space-y-6">
-            {/* Order Status Header */}
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              </div>
-              <h2 className="text-xl font-bold">
-                {activeOrder.status === 'in_progress' ? 'جاري تنفيذ طلبك' : 'جاري معالجة طلبك'}
-              </h2>
-              <p className="text-sm text-muted-foreground mt-2">
-                لا يمكنك إجراء طلب جديد حتى ينتهي هذا الطلب
-              </p>
-            </div>
-
-            {/* Order Details */}
-            <div className="bg-muted/50 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">المنتج:</span>
-                <span className="font-medium">
-                  {orderProduct && orderOption ? `${orderProduct.name} - ${orderOption.name}` : 'غير معروف'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">المبلغ:</span>
-                <span className="font-bold text-primary">${activeOrder.amount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">الحالة:</span>
-                <span className={`flex items-center gap-1 text-sm font-medium ${
-                  activeOrder.status === 'in_progress' ? 'text-blue-600' : 'text-yellow-600'
-                }`}>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  {activeOrder.status === 'in_progress' ? 'قيد التنفيذ' : 'قيد الانتظار'}
-                </span>
-              </div>
-              {tokenBalance !== null && (
-                <div className="flex items-center justify-between pt-2 border-t border-border">
-                  <span className="text-sm text-muted-foreground">الرصيد المتبقي:</span>
-                  <span className="font-bold">${tokenBalance}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Chat Section - Only show when in_progress */}
-            {activeOrder.status === 'in_progress' && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <MessageCircle className="w-4 h-4 text-primary" />
-                  <span className="font-medium text-sm">تواصل مع الدعم</span>
-                </div>
-                <OrderChat orderId={activeOrder.id} senderType="customer" />
-              </div>
-            )}
-
-            {activeOrder.status === 'pending' && (
-              <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <Clock className="w-6 h-6 text-yellow-600 mx-auto mb-2" />
-                <p className="text-sm text-yellow-800">
-                  طلبك قيد المراجعة. سيتم إتاحة المحادثة عند بدء التنفيذ.
-                </p>
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
-    );
-  }
+  // Get active order product info
+  const activeOrderProduct = activeOrder ? products.find(p => p.id === activeOrder.product_id) : null;
+  const activeOrderOption = activeOrder ? productOptions.find(o => o.id === activeOrder.option_id) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -985,96 +913,160 @@ const Index = () => {
           )}
         </div>
 
-          {/* Info Card */}
+          {/* Second Card - Info or Active Order */}
           <div className="card-simple p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Search className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-bold text-primary">معلومات الرصيد</h2>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              البحث عن التفعيل - سجل المعاملات - الرصيد
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">التوكن</label>
-                <input
-                  type="text"
-                  value={token}
-                  onChange={(e) => { setToken(e.target.value); setShowBalance(false); }}
-                  className="input-field w-full"
-                  placeholder="ادخل التوكن الخاص بك"
-                />
-              </div>
-
-              <button
-                onClick={handleShowBalance}
-                disabled={!token.trim() || isLoading}
-                className="btn-primary w-full py-3 disabled:opacity-50"
-              >
-                {isLoading ? 'جاري التحقق...' : 'عرض السجل والرصيد'}
-              </button>
-
-              {showBalance && tokenBalance !== null && (
-                <div className="space-y-4">
-                  {/* Balance Display */}
-                  <div className="p-4 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">الرصيد الحالي:</span>
-                      <span className="text-2xl font-bold text-primary">${tokenBalance}</span>
-                    </div>
+            {activeOrder ? (
+              // Show active order status/chat
+              <div className="space-y-4">
+                {/* Order Status Header */}
+                <div className="text-center">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                    <Loader2 className="w-6 h-6 text-primary animate-spin" />
                   </div>
-
-                  {/* Orders History */}
-                  <div className="border-t border-border pt-4">
-                    <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-                      <ShoppingCart className="w-4 h-4" />
-                      سجل الطلبات ({tokenOrders.length})
-                    </h3>
-
-                    {tokenOrders.length === 0 ? (
-                      <div className="text-center py-6 bg-muted/30 rounded-lg">
-                        <ShoppingCart className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">لا توجد طلبات سابقة</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {tokenOrders.map((order) => {
-                          const statusInfo = getStatusInfo(order.status);
-                          const StatusIcon = statusInfo.icon;
-                          return (
-                            <div key={order.id} className="bg-muted/30 rounded-lg p-3 border border-border">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-sm truncate">
-                                    {getProductName(order.product_id, order.option_id)}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {new Date(order.created_at).toLocaleDateString('ar-EG')} - {new Date(order.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
-                                  </p>
-                                </div>
-                                <div className="text-left">
-                                  <span className="font-bold text-primary text-sm">${order.amount}</span>
-                                  <div className={`flex items-center gap-1 mt-1 ${statusInfo.color}`}>
-                                    <StatusIcon className={`w-3 h-3 ${order.status === 'in_progress' ? 'animate-spin' : ''}`} />
-                                    <span className="text-xs font-medium">{statusInfo.label}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              {order.response_message && (
-                                <p className="text-xs text-muted-foreground mt-2 p-2 bg-background rounded border">
-                                  {order.response_message}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  <h2 className="text-lg font-bold">
+                    {activeOrder.status === 'in_progress' ? 'جاري تنفيذ طلبك' : 'جاري معالجة طلبك'}
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    لا يمكنك إجراء طلب جديد حتى ينتهي هذا الطلب
+                  </p>
                 </div>
-              )}
-            </div>
+
+                {/* Order Details */}
+                <div className="bg-muted/50 rounded-xl p-3 space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">المنتج:</span>
+                    <span className="font-medium text-xs">
+                      {activeOrderProduct && activeOrderOption ? `${activeOrderProduct.name} - ${activeOrderOption.name}` : 'غير معروف'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">المبلغ:</span>
+                    <span className="font-bold text-primary">${activeOrder.amount}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">الحالة:</span>
+                    <span className={`flex items-center gap-1 font-medium ${
+                      activeOrder.status === 'in_progress' ? 'text-blue-600' : 'text-yellow-600'
+                    }`}>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      {activeOrder.status === 'in_progress' ? 'قيد التنفيذ' : 'قيد الانتظار'}
+                    </span>
+                  </div>
+                  {tokenBalance !== null && (
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                      <span className="text-muted-foreground">الرصيد المتبقي:</span>
+                      <span className="font-bold">${tokenBalance}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Chat Section - Only show when in_progress */}
+                {activeOrder.status === 'in_progress' && (
+                  <OrderChat orderId={activeOrder.id} senderType="customer" />
+                )}
+
+                {activeOrder.status === 'pending' && (
+                  <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <Clock className="w-5 h-5 text-yellow-600 mx-auto mb-1" />
+                    <p className="text-xs text-yellow-800">
+                      طلبك قيد المراجعة. سيتم إتاحة المحادثة عند بدء التنفيذ.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Show balance info card
+              <>
+                <div className="flex items-center gap-2 mb-2">
+                  <Search className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-bold text-primary">معلومات الرصيد</h2>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  البحث عن التفعيل - سجل المعاملات - الرصيد
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">التوكن</label>
+                    <input
+                      type="text"
+                      value={token}
+                      onChange={(e) => { setToken(e.target.value); setShowBalance(false); }}
+                      className="input-field w-full"
+                      placeholder="ادخل التوكن الخاص بك"
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleShowBalance}
+                    disabled={!token.trim() || isLoading}
+                    className="btn-primary w-full py-3 disabled:opacity-50"
+                  >
+                    {isLoading ? 'جاري التحقق...' : 'عرض السجل والرصيد'}
+                  </button>
+
+                  {showBalance && tokenBalance !== null && (
+                    <div className="space-y-4">
+                      {/* Balance Display */}
+                      <div className="p-4 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">الرصيد الحالي:</span>
+                          <span className="text-2xl font-bold text-primary">${tokenBalance}</span>
+                        </div>
+                      </div>
+
+                      {/* Orders History */}
+                      <div className="border-t border-border pt-4">
+                        <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                          <ShoppingCart className="w-4 h-4" />
+                          سجل الطلبات ({tokenOrders.length})
+                        </h3>
+
+                        {tokenOrders.length === 0 ? (
+                          <div className="text-center py-6 bg-muted/30 rounded-lg">
+                            <ShoppingCart className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">لا توجد طلبات سابقة</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {tokenOrders.map((order) => {
+                              const statusInfo = getStatusInfo(order.status);
+                              const StatusIcon = statusInfo.icon;
+                              return (
+                                <div key={order.id} className="bg-muted/30 rounded-lg p-3 border border-border">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-sm truncate">
+                                        {getProductName(order.product_id, order.option_id)}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {new Date(order.created_at).toLocaleDateString('ar-EG')} - {new Date(order.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                                      </p>
+                                    </div>
+                                    <div className="text-left">
+                                      <span className="font-bold text-primary text-sm">${order.amount}</span>
+                                      <div className={`flex items-center gap-1 mt-1 ${statusInfo.color}`}>
+                                        <StatusIcon className={`w-3 h-3 ${order.status === 'in_progress' ? 'animate-spin' : ''}`} />
+                                        <span className="text-xs font-medium">{statusInfo.label}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {order.response_message && (
+                                    <p className="text-xs text-muted-foreground mt-2 p-2 bg-background rounded border">
+                                      {order.response_message}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </main>
